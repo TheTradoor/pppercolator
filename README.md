@@ -1,7 +1,9 @@
 # Pppercolator
 
-Paper perpetuals running on the unmodified [Percolator](https://github.com/aeyakovenko/percolator)
-risk engine by Anatoly Yakovenko, compiled to WebAssembly so it runs in a browser tab.
+A perps terminal with two modes. Real mode routes orders to Hyperliquid from the user's own
+wallet. Paper mode runs a perps market in the browser on the unmodified
+[Percolator](https://github.com/aeyakovenko/percolator) risk engine by Anatoly Yakovenko, compiled
+to WebAssembly and marked to live prices. Independent project, not affiliated with him.
 
 **Beta. Not audited.** Real mode sends orders to Hyperliquid from the user's own wallet; this
 project never holds funds. The paper mode uses the Percolator engine, whose own README says:
@@ -13,7 +15,7 @@ Live at https://pppercolator.fun. Launchpad at https://launchpad.pppercolator.fu
 ## Layout
 
 - `engine/` is Percolator at commit `37cb14ee1436eaf3b7d97e1901b0dc1bf38f5311`, byte for byte.
-  CI checks it against that commit's tree. Apache-2.0, see `NOTICE`.
+  CI runs its own test suite on every change. Apache-2.0, see `NOTICE`.
 - `sim/` is a thin wrapper. It holds the accounts, feeds prices and moves paper tokens.
   Every risk decision (margin, liquidation, fees, loss handling) is made by the engine.
 - `launchpad/` is the launchpad site: a retro desktop game with a Pump.fun launch flow (beta).

@@ -2,7 +2,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="description" content="A startup simulator on an old trading desk computer where every company you launch is a real coin tied to a real stock.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Pixelify+Sans:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=IBM+Plex+Mono:wght@400;500;600&family=Pixelify+Sans:wght@500;700&display=swap">
 <style>
 /* Layout: one screen. A sky blue 2000s desktop with icons at left, grey bevelled program windows on top, a taskbar pinned below. Hot pink is the only loud colour. */
 :root{
@@ -133,30 +133,33 @@ input[type=file]{width:100%;font-size:12px}
 .clock{padding:5px 10px;font:17px var(--term);white-space:nowrap}
 
 /* boot */
-.boot{position:fixed;inset:0;z-index:50;background:#000;color:#C8FFD8;font:20px/1.3 var(--term);padding:22px;display:grid;align-content:start;gap:2px;cursor:pointer}
+.boot{position:fixed;inset:0;z-index:50;background:#120c04;color:#ffb000;font:20px/1.3 var(--term);padding:22px;display:grid;align-content:start;gap:2px;cursor:pointer}
 .boot b{color:var(--pink);font-weight:normal}
-.boot .skip{margin-top:14px;color:#7A8}
+.boot .skip{margin-top:14px;color:#a87a26}.boot img{width:96px;height:96px;margin-bottom:10px;border:1px solid #4a3310}
+.pplogo{display:none}[data-era="1975"] .pplogo{display:block;position:absolute;right:18px;top:18px;width:min(160px,32vw);height:auto;border:1px solid #4a3310;pointer-events:none}
+.coinlogo{width:72px;height:72px;float:right;margin:0 0 8px 12px;border:1px solid var(--sh)}
 @media(prefers-reduced-motion:reduce){.spr g,.spr .ey,.spin{animation:none}.tape span{animation:none;padding-left:0}}
 /* ---- time machine: the year picks the skin ---- */
-.tm{position:fixed;inset:0;z-index:48;background:rgba(0,0,0,.9);display:grid;place-items:center;overflow:auto;color:#C8FFD8;font:20px/1.25 "VT323","Courier New",monospace;padding:16px max(16px,env(safe-area-inset-right,0px)) 16px max(16px,env(safe-area-inset-left,0px))}
+.tm{position:fixed;inset:0;z-index:48;background:rgba(18,12,4,.96);display:grid;place-items:center;overflow:auto;color:#ffb000;font:20px/1.25 "VT323","Courier New",monospace;padding:16px max(16px,env(safe-area-inset-right,0px)) 16px max(16px,env(safe-area-inset-left,0px))}
 .tmbox{width:min(760px,100%);display:grid;gap:14px}
-.tmh{font-size:40px;line-height:1;color:#fff;letter-spacing:.06em}
+.tmh{font-size:40px;line-height:1;color:#ffd76a;letter-spacing:.06em}
 .tmrow{display:grid;gap:10px}
 @media(min-width:700px){.tmrow{grid-template-columns:repeat(3,1fr)}}
-.tmrow button{display:grid;gap:6px;text-align:left;padding:16px;min-height:120px;cursor:pointer;font:inherit;color:#C8FFD8;background:#06120A;border:2px solid #2E7D4A}
-.tmrow button:hover,.tmrow button:focus-visible{background:#0C2414;border-color:#C8FFD8;outline:none}
-.tmrow b{font-size:54px;line-height:.9;font-weight:400;color:#fff}
+.tmrow button{display:grid;gap:6px;text-align:left;padding:16px;min-height:120px;cursor:pointer;font:inherit;color:#ffb000;background:#1b1206;border:1px solid #4a3310}
+.tmrow button:hover,.tmrow button:focus-visible{background:#2a1c08;border-color:#ffb000;outline:none}
+.tmrow b{font-size:54px;line-height:.9;font-weight:400;color:#ffd76a}
 .tmrow button[data-era="1975"] b{color:#FFB000}.tmrow button[data-era="2009"] b{color:#7CC4FF}
 
 /* 1975: amber terminal */
-[data-era="1975"]{--desk:#0B0906;--face:#14100A;--face-2:#14100A;--hi:#A87400;--sh:#3A2A04;--dk:#A87400;--ink:#FFB000;--dim:#C08A10;--paper:#0B0906;--title-a:#FFB000;--title-b:#FFB000;--pink:#FFB000;--pink-lo:#FFB000;--ui:var(--term);--pix:var(--term)}
-[data-era="1975"] body{font-size:18px;line-height:1.2}
-[data-era="1975"] .tbar,[data-era="1975"] .sside,[data-era="1975"] .tagp,[data-era="1975"] .slist button:hover,[data-era="1975"] .slist button:focus-visible{color:#0B0906}
-[data-era="1975"] .btn.go{background:#FFB000;color:#0B0906;outline-color:#FFB000}
-[data-era="1975"] .btn[aria-pressed=true],[data-era="1975"] .btn[aria-selected=true]{background:#FFB000;color:#0B0906}
-[data-era="1975"] .tape{background:#0B0906;color:#FFB000}
+[data-era="1975"]{--desk:#120c04;--face:#1b1206;--face-2:#1b1206;--hi:#a87a26;--sh:#4a3310;--dk:#a87a26;--ink:#FFB000;--dim:#a87a26;--paper:#120c04;--title-a:#FFB000;--title-b:#FFB000;--pink:#FFB000;--pink-lo:#ffd76a;--ui:"IBM Plex Mono",ui-monospace,Menlo,monospace;--pix:var(--term)}
+[data-era="1975"] body{font-size:13px;line-height:1.45}
+[data-era="1975"] h2{font:400 26px/1 var(--term);color:#ffd76a;letter-spacing:1px}[data-era="1975"] a{color:#ffd76a}
+[data-era="1975"] .tbar,[data-era="1975"] .sside,[data-era="1975"] .tagp,[data-era="1975"] .slist button:hover,[data-era="1975"] .slist button:focus-visible{color:#120c04}
+[data-era="1975"] .btn.go{background:#FFB000;color:#120c04;outline-color:#FFB000}
+[data-era="1975"] .btn[aria-pressed=true],[data-era="1975"] .btn[aria-selected=true]{background:#FFB000;color:#120c04}
+[data-era="1975"] .tape{background:#120c04;color:#FFB000}
 [data-era="1975"] .ico{color:#FFB000;text-shadow:none;font:16px var(--term)}
-[data-era="1975"] .bubble{background:#14100A;color:#FFB000;border-color:#FFB000}
+[data-era="1975"] .bubble{background:#1b1206;color:#FFB000;border-color:#FFB000}
 [data-era="1975"] .note,[data-era="1975"] table,[data-era="1975"] .empty{font-size:18px}
 [data-era="1975"] canvas,[data-era="1975"] .face,[data-era="1975"] .ico svg,[data-era="1975"] .gface,[data-era="1975"] .wheel,[data-era="1975"] .msgrow i{filter:grayscale(1) sepia(1) saturate(5) hue-rotate(-12deg) brightness(.95) contrast(1.1)}
 [data-era="1975"] canvas{filter:grayscale(1) sepia(1) saturate(5) hue-rotate(-12deg) brightness(.62) contrast(1.25)}
@@ -201,20 +204,20 @@ input[type=file]{width:100%;font-size:12px}
 @media(min-width:760px){[data-era="1975"]{--fk:38px}}
 [data-era="1975"] .desktop{padding:0}
 [data-era="1975"] .desktop::before{content:"PPPERCOLATOR TERMINAL   1975\A\A NO PROGRAM RUNNING.\A PRESS A FUNCTION KEY.";white-space:pre-wrap;display:block;padding:18px;font:22px/1.3 var(--term);color:#FFB000;text-shadow:0 0 6px rgba(255,176,0,.35)}
-[data-era="1975"] .desktop>.win{inset:0 0 var(--fk) 0!important;left:0!important;top:0!important;right:0!important;bottom:var(--fk)!important;width:auto!important;max-height:none!important;padding:0;border:0;box-shadow:none;background:#0B0906}
+[data-era="1975"] .desktop>.win{inset:0 0 var(--fk) 0!important;left:0!important;top:0!important;right:0!important;bottom:var(--fk)!important;width:auto!important;max-height:none!important;padding:0;border:0;box-shadow:none;background:#120c04}
 [data-era="1975"] .tbar{background:#FFB000;padding:2px 8px;font-weight:normal;text-transform:uppercase;letter-spacing:.06em}
-[data-era="1975"] .x{width:auto;height:auto;font-size:0;border:0;box-shadow:none;background:none;color:#0B0906;padding:0 4px}
+[data-era="1975"] .x{width:auto;height:auto;font-size:0;border:0;box-shadow:none;background:none;color:#120c04;padding:0 4px}
 [data-era="1975"] .x::after{content:"[ESC]";font:18px var(--term)}
 [data-era="1975"] .btn{border:1px solid #FFB000;box-shadow:none}
-[data-era="1975"] .in,[data-era="1975"] input[type=text],[data-era="1975"] select{border:1px solid #6B4A00;box-shadow:none}
-[data-era="1975"] .sbar{border-top:1px dashed #6B4A00;box-shadow:none;font-size:16px}
-[data-era="1975"] .icons{position:absolute;left:0;right:0;bottom:0;height:var(--fk);width:auto;max-width:none;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:none;grid-auto-flow:row;grid-auto-columns:auto;gap:0;align-content:stretch;counter-reset:fk;background:#0B0906;border-top:1px solid #FFB000}
+[data-era="1975"] .in,[data-era="1975"] input[type=text],[data-era="1975"] select{border:1px solid #4a3310;box-shadow:none}
+[data-era="1975"] .sbar{border-top:1px dashed #4a3310;box-shadow:none;font-size:16px}
+[data-era="1975"] .icons{position:absolute;left:0;right:0;bottom:0;height:var(--fk);width:auto;max-width:none;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:none;grid-auto-flow:row;grid-auto-columns:auto;gap:0;align-content:stretch;counter-reset:fk;background:#120c04;border-top:1px solid #FFB000}
 @media(min-width:760px){[data-era="1975"] .icons{grid-template-columns:repeat(9,1fr)}}
 [data-era="1975"] .ico{counter-increment:fk;display:block;padding:4px 4px;min-height:32px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border:0;text-transform:uppercase}
 [data-era="1975"] .ico svg{display:none}
-[data-era="1975"] .ico::before{content:"F" counter(fk);background:#FFB000;color:#0B0906;padding:0 4px;margin-right:6px;text-shadow:none}
-[data-era="1975"] .ico:hover,[data-era="1975"] .ico:focus-visible{background:#3A2A04;border:0}
-[data-era="1975"] .task{order:-1;border:0;border-bottom:1px solid #FFB000;box-shadow:none;background:#0B0906;padding-top:calc(4px + env(safe-area-inset-top,0px));padding-bottom:4px}
+[data-era="1975"] .ico::before{content:"F" counter(fk);background:#FFB000;color:#120c04;padding:0 4px;margin-right:6px;text-shadow:none}
+[data-era="1975"] .ico:hover,[data-era="1975"] .ico:focus-visible{background:#4a3310;border:0}
+[data-era="1975"] .task{order:-1;border:0;border-bottom:1px solid #FFB000;box-shadow:none;background:#120c04;padding-top:calc(4px + env(safe-area-inset-top,0px));padding-bottom:4px}
 [data-era="1975"] .start{font-size:0;border:1px solid #FFB000;box-shadow:none;background:none;gap:0}
 [data-era="1975"] .start i{display:none}
 [data-era="1975"] .start::after{content:"MENU";font:18px var(--term);color:#FFB000}
@@ -280,16 +283,18 @@ input[type=file]{width:100%;font-size:12px}
   </div>
 </div>
 <div class="boot" id="boot" role="button" tabindex="0" aria-label="Start Pppercolator Launchpad">
-  <div>PPPERCOLATOR BIOS v1.0 &nbsp; (C) 2000</div>
+  <img src="/ppp.png" alt="PPP logo" width="96" height="96">
+  <div>PPPERCOLATOR BIOS v1.0</div>
   <div>Memory test ........ 64MB OK</div>
   <div>Dialing 555-2000 ... 56,000 bps OK</div>
-  <div>Year set to 2000. Repeating history ...</div>
+  <div>Desk set to amber terminal ...</div>
   <div>Loading <b>PPPERCOLATOR</b> ...</div>
   <div class="skip">Tap to start</div>
 </div>
 
 <div class="os">
   <main class="desktop" id="desktop">
+    <img class="pplogo" src="/ppp.png" alt="" width="160" height="160">
     <div class="icons">
       <div class="pmh"><div class="pmt">Program Manager</div><div class="pmm"><button type="button" id="pmTime">Time Machine</button><button type="button" data-open="w-coin">PPP Coin</button><button type="button" data-open="w-manual">Help</button></div></div>
       <button class="ico" data-open="w-launch"><svg viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="2" y="5" width="12" height="9" fill="#fff"/><rect x="2" y="5" width="12" height="2" fill="#E91E63"/><rect x="6" y="2" width="4" height="3" fill="#fff"/><rect x="4" y="9" width="2" height="3" fill="#0A3B8C"/><rect x="7" y="9" width="2" height="3" fill="#0A3B8C"/><rect x="10" y="9" width="2" height="3" fill="#0A3B8C"/></svg>Start a Company</button>
@@ -434,9 +439,9 @@ in 256 colours.</div></div>
     <section class="win out" id="w-coin" hidden aria-label="PPP Coin">
       <div class="tbar"><span>PPP Coin</span><button class="btn x" data-close aria-label="Close">x</button></div>
       <div class="body">
-        <div><h2>The flywheel</h2><p class="lead">Name: Pppercolator. Ticker: PPP. It is live on Pump.fun. Contract: Ho7iohoM6UN96yoxzBNzz9aXZpNW3AyUVuEmBdAQpump</p><p class="lead"><a href="https://pppercolator.fun/" target="_blank" rel="noopener">Trade perps on pppercolator.fun</a> &nbsp; <a href="https://pump.fun/coin/Ho7iohoM6UN96yoxzBNzz9aXZpNW3AyUVuEmBdAQpump" target="_blank" rel="noopener">PPP on Pump.fun</a> &nbsp; <a href="https://docs.pppercolator.fun/" target="_blank" rel="noopener">Docs</a></p></div>
+        <div><img class="coinlogo" src="/ppp.png" alt="PPP coin logo" width="72" height="72"><h2>The flywheel</h2><p class="lead">Name: Pppercolator. Ticker: PPP. It is live on Pump.fun. Contract: Ho7iohoM6UN96yoxzBNzz9aXZpNW3AyUVuEmBdAQpump</p><p class="lead"><a href="https://pppercolator.fun/" target="_blank" rel="noopener">Trade perps on pppercolator.fun</a> &nbsp; <a href="https://pump.fun/coin/Ho7iohoM6UN96yoxzBNzz9aXZpNW3AyUVuEmBdAQpump" target="_blank" rel="noopener">PPP on Pump.fun</a> &nbsp; <a href="https://docs.pppercolator.fun/" target="_blank" rel="noopener">Docs</a></p></div>
         <div class="fly in">
-          <svg class="wheel" viewBox="0 0 120 120" aria-hidden="true"><g class="spin"><circle cx="60" cy="60" r="44" fill="none" stroke="#E91E63" stroke-width="6" stroke-dasharray="52 17.1"/></g><circle cx="60" cy="60" r="24" fill="#0A3B8C"/><text x="60" y="65" text-anchor="middle" font-family="VT323,monospace" font-size="16" fill="#fff">PPP</text></svg>
+          <svg class="wheel" viewBox="0 0 120 120" aria-hidden="true"><g class="spin"><circle cx="60" cy="60" r="44" fill="none" stroke="#E91E63" stroke-width="6" stroke-dasharray="52 17.1"/></g><circle cx="60" cy="60" r="24" fill="#1b1206" stroke="#ffb000"/><text x="60" y="65" text-anchor="middle" font-family="VT323,monospace" font-size="16" fill="#ffd76a">PPP</text></svg>
           <ol>
             <li>Every company on the exchange pays trade fees.</li>
             <li>Site fees from the perps terminal, plus creator fees from PPP itself, go to the team wallet.</li>
@@ -445,7 +450,7 @@ in 256 colours.</div></div>
           </ol>
         </div>
         <div class="stats"><div class="in"><small>Fees collected</small><b>0 SOL</b></div><div class="in"><small>Bought back</small><b>0 PPP</b></div><div class="in"><small>Buybacks made</small><b>none yet</b></div></div>
-        <div class="in" style="padding:10px">Contract address: <b>not launched yet</b>. The numbers go live at launch.</div>
+        <div class="in" style="padding:10px">Contract address: <b style="overflow-wrap:anywhere">Ho7iohoM6UN96yoxzBNzz9aXZpNW3AyUVuEmBdAQpump</b>. Buybacks are listed here once they are made.</div>
         <div class="in" style="padding:10px;overflow-wrap:anywhere">Dev wallet: <b style="font-family:var(--term);font-size:16px;font-weight:normal">Dbjo7CBkRepRAhcaKKxV1BjWyQUCVRdFdHWupyL5xoVu</b></div>
       </div>
       <div class="sbar">A burn lowers supply. It does not guarantee a price.</div>
@@ -491,9 +496,9 @@ in 256 colours.</div></div>
   boot.addEventListener("click",off);boot.addEventListener("keydown",off);setTimeout(off,1800);
 
   /* time machine */
-  function setEra(y){document.documentElement.dataset.era=y;$("eraLbl").textContent=y;try{localStorage.setItem("sb_era",y);}catch(e){}}
-  (function(){var saved="";try{saved=localStorage.getItem("sb_era")||"";}catch(e){}
-    if(saved==="1975"||saved==="1993"||saved==="2009"){setEra(saved);}else{document.documentElement.dataset.era="1993";$("tm").hidden=false;}
+  function setEra(y){document.documentElement.dataset.era=y;$("eraLbl").textContent=y;try{localStorage.setItem("ppp_era",y);}catch(e){}}
+  (function(){var saved="";try{saved=localStorage.getItem("ppp_era")||"";}catch(e){}
+    if(saved==="1975"||saved==="1993"||saved==="2009"){setEra(saved);}else{document.documentElement.dataset.era="1975";$("eraLbl").textContent="1975";}
     $("tm").addEventListener("click",function(e){var b=e.target.closest("[data-era]");if(!b)return;setEra(b.dataset.era);$("tm").hidden=true;});
     $("tmOpen").addEventListener("click",function(){$("tm").hidden=false;});$("pmTime").addEventListener("click",function(){$("tm").hidden=false;});
     [].forEach.call(document.querySelectorAll(".ico"),function(b){b.title=b.textContent.trim();});

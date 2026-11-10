@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Toly's Theorem</title>
+<meta name="description" content="A formal treatment of the rug probability of infinite Percolator forks. With proof.">
+<meta property="og:title" content="Toly's Theorem">
+<meta property="og:description" content="A formal treatment of the rug probability of infinite Percolator forks. With proof.">
+<meta property="og:image" content="https://pppercolator.fun/og.png">
+<meta property="og:url" content="https://pppercolator.fun/theorem/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" href="/icon-180.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&display=swap">
+<style>
+:root{color-scheme:dark;--tube:#120c04;--panel:#1b1206;--line:#4a3310;--dim:#a87a26;--amber:#ffb000;--hot:#ffd76a;--up:#9be564;--down:#ff6b4a;
+--display:"VT323","IBM Plex Mono",ui-monospace,Menlo,monospace;--mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--tube)}
+body{color:var(--amber);font-family:var(--mono);font-size:14px;line-height:1.6;
+padding:20px max(16px,env(safe-area-inset-right,0px)) 56px max(16px,env(safe-area-inset-left,0px));
+background:radial-gradient(120% 50% at 50% 0%,#1f1507 0%,var(--tube) 70%) no-repeat,var(--tube)}
+a{color:var(--hot);text-underline-offset:3px}
+.wrap{max-width:760px;margin:0 auto}
+.kicker{color:var(--dim);font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(46px,13vw,84px);line-height:.9;margin:6px 0 10px;color:var(--hot);letter-spacing:2px;text-shadow:0 0 18px rgba(255,176,0,.4)}
+h2{font-family:var(--display);font-weight:400;font-size:28px;line-height:1;margin:0 0 8px;color:var(--hot);letter-spacing:1px}
+p{margin:0 0 10px}
+.box{border:1px solid var(--line);background:var(--panel);padding:14px 16px;margin:16px 0}
+.stmt{border-left:3px solid var(--amber)}
+.math{font-size:clamp(15px,4.2vw,19px);color:var(--hot);overflow-x:auto;white-space:nowrap;padding:6px 0}
+.src{color:var(--dim);font-size:12px}
+ol{margin:0;padding-left:22px}
+li{margin-bottom:8px}
+.qed{text-align:right;color:var(--hot);font-family:var(--display);font-size:26px;line-height:1}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin:16px 0}
+.stats div{background:var(--panel);padding:10px 12px;min-width:0}
+.stats span{display:block;color:var(--dim);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase}
+.stats b{font-family:var(--display);font-weight:400;font-size:34px;line-height:1;color:var(--hot);font-variant-numeric:tabular-nums}
+.stats small{display:block;color:var(--dim);font-size:11px}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.btn{border:1px solid var(--amber);color:var(--tube);background:var(--amber);padding:10px 14px;text-decoration:none;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.btn.ghost{background:none;color:var(--amber)}
+.btn:hover{background:var(--hot);border-color:var(--hot);color:var(--tube)}
+footer{color:var(--dim);font-size:12px;margin-top:22px;border-top:1px solid var(--line);padding-top:12px}
+@media(max-width:520px){.stats{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="kicker">Journal of Applied Rug Theory, vol. 1, no. 1</div>
+  <h1>TOLY'S THEOREM</h1>
+  <p>On the rug probability of infinitely many Percolator forks.</p>
+
+  <div class="box stmt">
+    <h2>Statement</h2>
+    <p>Let <i>F</i> be the set of all Percolator forks and <i>C</i> the set of all coins. Then:</p>
+    <div class="math">P( &forall; f &isin; F : rug(f) ) = 1 &nbsp;&hArr;&nbsp; &forall; c &isin; C : rug(c)</div>
+    <p class="src">First stated by <a href="https://x.com/toly/status/2120214495113130118" target="_blank" rel="noopener" id="src">@toly, 10 Nov 2026</a>, in reply to a fork. Offered without proof. We supply one.</p>
+  </div>
+
+  <div class="box">
+    <h2>Proof</h2>
+    <ol>
+      <li><b>(&lArr;)</b> Suppose every coin is a rug. Every fork ships a coin within about four minutes (empirical). So every fork is a rug.</li>
+      <li><b>(&rArr;)</b> Suppose every fork is a rug. Forking costs nothing, so <i>F</i> is unbounded. For any coin <i>c</i> there is a fork that launches <i>c</i>. That fork is a rug, so <i>c</i> is a rug.</li>
+      <li>Both directions hold. The engine appears on neither side of the equation.</li>
+    </ol>
+    <div class="qed">Q.E.D. &#9632;</div>
+  </div>
+
+  <div class="box">
+    <h2>Corollaries</h2>
+    <ol>
+      <li>If one honest coin exists anywhere, at least one honest fork exists. We do not know which. Neither do you.</li>
+      <li>You cannot tell a fork from its coin. You can tell it from its engine, because the engine can be diffed.</li>
+      <li>$PPP is a rug if and only if all coins are rugs. It is a memecoin and can go to zero either way.</li>
+    </ol>
+  </div>
+
+  <div class="stats" aria-live="polite">
+    <div><span>Percolator forks on GitHub</span><b id="forks">...</b><small id="forksNote">live count</small></div>
+    <div><span>Forks proven to be rugs</span><b>0</b><small>none proven here</small></div>
+    <div><span>Forks decidable from the coin</span><b>0</b><small>see corollary 2</small></div>
+  </div>
+
+  <div class="box">
+    <h2>Experimental check</h2>
+    <p>Corollary 2 is testable. One fork runs the engine unmodified at commit <b>37cb14e</b>, in your browser, with three solvency checks on screen every slot. Paper money, so finding out costs nothing.</p>
+    <div class="btns">
+      <a class="btn" href="https://pppercolator.fun/">Try to break the engine</a>
+      <a class="btn ghost" href="https://github.com/bubblesonchain/pppercolator" target="_blank" rel="noopener">Diff the code</a>
+      <a class="btn ghost" href="https://docs.pppercolator.fun/" target="_blank" rel="noopener">Docs</a>
+    </div>
+  </div>
+
+  <footer>A joke with a point, by the Pppercolator team. Independent project, not affiliated with or endorsed by Anatoly Yakovenko. No fork or coin is accused of anything on this page. Not financial advice.</footer>
+</div>
+<script>
+(async function(){
+  var el=document.getElementById("forks"),note=document.getElementById("forksNote");
+  try{
+    var r=await fetch("https://api.github.com/repos/aeyakovenko/percolator",{headers:{accept:"application/vnd.github+json"}});
+    if(!r.ok) throw 0;
+    var d=await r.json();
+    if(typeof d.forks_count!=="number") throw 0;
+    el.textContent=d.forks_count.toLocaleString("en-US");
+    note.textContent="live from GitHub, and counting";
+  }catch(e){ el.textContent="many"; note.textContent="GitHub did not answer, count unavailable"; }
+})();
+</script>
+</body>
+</html>

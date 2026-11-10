@@ -10,7 +10,7 @@ project never holds funds. The paper mode uses the Percolator engine, whose own 
 "Educational research project. Not production ready. Not audited. Do not use with real funds."
 No real funds touch that engine here.
 
-Live at https://pppercolator.fun. Launchpad at https://launchpad.pppercolator.fun.
+Live at https://pppercolator.fun. Launchpad at https://launchpad.pppercolator.fun. Docs at https://docs.pppercolator.fun.
 
 ## Layout
 
@@ -19,6 +19,7 @@ Live at https://pppercolator.fun. Launchpad at https://launchpad.pppercolator.fu
 - `sim/` is a thin wrapper. It holds the accounts, feeds prices and moves paper tokens.
   Every risk decision (margin, liquidation, fees, loss handling) is made by the engine.
 - `launchpad/` is the launchpad site: a retro desktop game with a Pump.fun launch flow (beta).
+- `docs/` is the docs site.
 - `site/` is the deployed terminal build with its icons and share card.
 - `web/index.src.html` is the terminal page. `__WASM__` is replaced with the base64 of the build.
 - `hl/` is the Hyperliquid client (wallet connect, trading-only agent key, market orders), bundled by CI

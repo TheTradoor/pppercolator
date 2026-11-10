@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Two Coffees and a Beer</title>
+<meta name="description" content="San Francisco, 2017. You have until 4 a.m. to invent a clock for a blockchain. A one minute game.">
+<meta property="og:title" content="Two Coffees and a Beer">
+<meta property="og:description" content="San Francisco, 2017. You have until 4 a.m. to invent a clock for a blockchain. A one minute game.">
+<meta property="og:image" content="https://two-coffees-and-a-beer.netlify.app/og.png">
+<meta property="og:url" content="https://two-coffees-and-a-beer.netlify.app/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#0b1322">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect width='16' height='16' fill='%230b1322'/%3E%3Crect x='3' y='5' width='7' height='8' fill='%23f4ead7'/%3E%3Crect x='10' y='7' width='3' height='1' fill='%23f4ead7'/%3E%3Crect x='12' y='8' width='1' height='3' fill='%23f4ead7'/%3E%3Crect x='10' y='11' width='3' height='1' fill='%23f4ead7'/%3E%3Crect x='4' y='6' width='5' height='2' fill='%236b4426'/%3E%3Crect x='5' y='2' width='1' height='2' fill='%2314f195'/%3E%3Crect x='7' y='1' width='1' height='3' fill='%2314f195'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jersey+10&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* One night, one desk. Night blue room, a warm lamp, coffee brown and beer gold for the two drinks, Solana green only when an idea lands. */
+:root{
+  color-scheme:dark;
+  --night:#0b1322; --room:#131d33; --panel:#18233d; --edge:#2a3a5e;
+  --paper:#f4ead7; --dim:#93a0bd; --lamp:#ffd08a;
+  --coffee:#b9793f; --coffee-d:#6b4426; --beer:#f2b21b; --beer-d:#9a6a00;
+  --idea:#14f195; --idea-2:#9945ff; --bad:#ff6b5e;
+  --display:"Jersey 10","Courier New",monospace; --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--night)}
+body{color:var(--paper);font:500 15px/1.5 var(--body);-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+button{font:inherit;color:inherit}
+.app{min-height:100%;max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:12px;
+  padding:max(12px,env(safe-area-inset-top,0px)) max(14px,env(safe-area-inset-right,0px)) max(14px,env(safe-area-inset-bottom,0px)) max(14px,env(safe-area-inset-left,0px))}
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.clock{font:400 64px/.8 var(--display);letter-spacing:1px;color:var(--paper);font-variant-numeric:tabular-nums}
+.clock small{font-size:28px;color:var(--dim);margin-left:4px}
+.where{color:var(--dim);font-size:13px;text-align:right;line-height:1.3}
+.where b{display:block;color:var(--paper);font-weight:600}
+.stage{position:relative;border:2px solid var(--edge);background:#070c17;overflow:hidden}
+canvas{display:block;width:100%;height:auto;image-rendering:pixelated;image-rendering:crisp-edges}
+.toast{position:absolute;left:0;right:0;top:10px;text-align:center;font:400 30px/1 var(--display);color:var(--idea);text-shadow:0 2px 0 #000;pointer-events:none;opacity:0;transform:translateY(6px);transition:opacity .25s,transform .25s}
+.toast.on{opacity:1;transform:none}
+.gauges{display:grid;gap:10px}
+.g{display:grid;grid-template-columns:64px minmax(0,1fr);align-items:center;gap:10px}
+.g label{font-weight:600;font-size:14px}
+.bar{position:relative;height:22px;background:var(--room);border:2px solid var(--edge)}
+.band{position:absolute;top:0;bottom:0;background:rgba(255,208,138,.16);border-left:2px solid var(--lamp);border-right:2px solid var(--lamp);z-index:1}
+.fill{opacity:.9}.pin{z-index:2}
+.fill{position:absolute;left:0;top:0;bottom:0;width:0}
+.g.c .fill{background:var(--coffee)}.g.b .fill{background:var(--beer)}
+.pin{position:absolute;top:-4px;bottom:-4px;width:4px;margin-left:-2px;background:var(--paper)}
+.g.ok .bar{border-color:var(--lamp)}
+.g.hot .bar{border-color:var(--bad)}
+.idea{display:grid;grid-template-columns:64px minmax(0,1fr);align-items:center;gap:10px;color:var(--dim);font-size:13px}
+.idea .bar{height:10px}.idea .fill{background:linear-gradient(90deg,var(--idea-2),var(--idea))}
+.idea span b{color:var(--paper);font-weight:600}
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.act{min-height:74px;border:2px solid;cursor:pointer;display:grid;place-items:center;gap:0;padding:8px;font:400 34px/1 var(--display);letter-spacing:1px;touch-action:manipulation;user-select:none;transition:transform .06s}
+.act small{font:600 12px/1.2 var(--body);letter-spacing:0;opacity:.85}
+.act.c{background:var(--coffee-d);border-color:var(--coffee);color:#ffe9d2}
+.act.b{background:var(--beer-d);border-color:var(--beer);color:#fff3cf}
+.act:active{transform:translateY(2px)}
+.act[disabled]{opacity:.45;cursor:default}
+.act:focus-visible,.btn:focus-visible,.mute:focus-visible{outline:3px solid var(--paper);outline-offset:2px}
+.note{background:var(--panel);border:2px solid var(--edge);padding:10px 12px}
+.note h2{margin:0 0 6px;font:400 26px/1 var(--display);letter-spacing:1px}
+.note ol{margin:0;padding:0;list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:2px 12px;font-size:13.5px}
+.note li{color:#4c5a7c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.note li.got{color:var(--idea)}
+.foot{color:var(--dim);font-size:12px;line-height:1.45;margin-top:auto;display:flex;gap:10px;justify-content:space-between;align-items:flex-start}
+.foot a{color:var(--paper)}
+.mute{flex:none;background:none;border:2px solid var(--edge);padding:4px 8px;font-size:12px;cursor:pointer;color:var(--dim)}
+/* overlays */
+.ov{position:fixed;inset:0;z-index:5;display:grid;place-items:center;background:rgba(7,12,23,.9);padding:20px;overflow:auto}
+.ov[hidden]{display:none}
+.card{width:min(460px,100%);background:var(--room);border:2px solid var(--edge);padding:22px 20px;display:grid;gap:12px}
+.card h1{margin:0;font:400 clamp(52px,15vw,76px)/.82 var(--display);letter-spacing:1px;color:var(--paper)}
+.card h1 i{font-style:normal;color:var(--coffee)}.card h1 u{text-decoration:none;color:var(--beer)}
+.card p{margin:0;color:#c9d2e6}
+.card .how{display:grid;gap:6px;padding:0;margin:0;list-style:none;color:#c9d2e6}
+.card .how b{color:var(--paper)}
+.btn{min-height:52px;border:2px solid var(--lamp);background:var(--lamp);color:#1a1205;font:400 30px/1 var(--display);letter-spacing:1px;cursor:pointer;padding:8px 14px;text-align:center;text-decoration:none;display:grid;place-items:center}
+.btn.ghost{background:none;color:var(--lamp)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.verdict{font:400 clamp(40px,11vw,56px)/.9 var(--display);margin:0;letter-spacing:1px}
+.verdict.win{color:var(--idea)}.verdict.lose{color:var(--bad)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stats div{background:var(--panel);border:2px solid var(--edge);padding:8px 10px}
+.stats b{display:block;font:400 34px/1 var(--display)}
+.stats span{font-size:12px;color:var(--dim)}
+.badge{border:2px dashed var(--lamp);color:var(--lamp);padding:8px 10px;font-size:13.5px}
+.coin{font-size:13px;color:var(--dim);border-top:2px solid var(--edge);padding-top:10px;overflow-wrap:anywhere}
+.coin a{color:var(--paper)}
+.fine{font-size:12px;color:var(--dim)}
+@media (min-height:820px){.act{min-height:92px}}
+@media (prefers-reduced-motion:reduce){.toast,.act{transition:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="clock" id="clock" aria-live="off">12:00<small>am</small></div>
+    <div class="where"><b>San Francisco, 2017</b>The clock has to work by 4.</div>
+  </div>
+
+  <div class="stage">
+    <canvas id="cv" width="192" height="112" role="img" aria-label="A programmer at a desk at night, with a window, a monitor and a lamp"></canvas>
+    <div class="toast" id="toast" aria-live="polite"></div>
+  </div>
+
+  <div class="gauges">
+    <div class="g c" id="gC"><label>Awake</label><div class="bar"><div class="band" id="bandC"></div><div class="fill" id="fillC"></div><div class="pin" id="pinC"></div></div></div>
+    <div class="g b" id="gB"><label>Loose</label><div class="bar"><div class="band" id="bandB"></div><div class="fill" id="fillB"></div><div class="pin" id="pinB"></div></div></div>
+    <div class="idea"><span>Next idea</span><div class="bar"><div class="fill" id="fillI"></div></div></div>
+  </div>
+
+  <div class="acts">
+    <button class="act c" id="bC" type="button">Coffee<small id="nC">0 poured</small></button>
+    <button class="act b" id="bB" type="button">Beer<small id="nB">0 opened</small></button>
+  </div>
+
+  <div class="note">
+    <h2>Notebook</h2>
+    <ol id="ideas"></ol>
+  </div>
+
+  <div class="foot">
+    <span>A fan game about a well known origin story. Not affiliated with or endorsed by Anatoly Yakovenko or Solana.</span>
+    <button class="mute" id="mute" type="button" aria-pressed="false">Sound on</button>
+  </div>
+</div>
+
+<div class="ov" id="ovStart">
+  <div class="card">
+    <h1>Two <i>Coffees</i> and a <u>Beer</u></h1>
+    <p>It is midnight in San Francisco, 2017. One engineer has an idea for a clock that blockchains could share. He has until 4 a.m. to get it into the notebook.</p>
+    <ul class="how">
+      <li><b>You run the drinks.</b> Coffee keeps him awake. Beer keeps him loose.</li>
+      <li><b>Hold both gauges inside the lit band.</b> Ideas only arrive there. The coffee band climbs as he tires.</li>
+      <li><b>Too much coffee</b> and he rewrites everything. <b>Too much beer</b> and he sleeps.</li>
+    </ul>
+    <button class="btn" id="start" type="button">Start the night</button>
+    <p class="fine">One minute. Keyboard: C for coffee, B for beer.</p>
+    <div class="coin" id="coinStart" hidden></div>
+  </div>
+</div>
+
+<div class="ov" id="ovEnd" hidden>
+  <div class="card">
+    <p class="verdict" id="vTitle"></p>
+    <p id="vLine"></p>
+    <div class="stats">
+      <div><b id="sI">0</b><span>ideas of 8</span></div>
+      <div><b id="sC">0</b><span>coffees</span></div>
+      <div><b id="sB">0</b><span>beers</span></div>
+    </div>
+    <div class="badge" id="badge" hidden></div>
+    <div class="row">
+      <button class="btn" id="again" type="button">Try again</button>
+      <a class="btn ghost" id="share" target="_blank" rel="noopener">Post result</a>
+    </div>
+    <div class="coin" id="coinEnd" hidden></div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+/* Set these when the coin exists. Nothing is shown while CA is empty. */
+var COIN={ticker:"",ca:"",url:""};
+
+var $=function(id){return document.getElementById(id);};
+var IDEAS=["Proof of History","Tower BFT","Turbine","Gulf Stream","Sealevel","Pipelining","Cloudbreak","Archivers"];
+var NEED=[9,6,6,5,5,5,5,5];            // seconds inside the band for each idea
+var NIGHT=64;                           // real seconds from 12:00 to 4:00
+var ZB=[14,34];                         // the beer band stays put
+function zc(t){ var k=Math.min(1,t/NIGHT); return [34+18*k,58+18*k]; }   // the coffee band climbs as the night wears on
+var reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+var S, raf=0, last=0, muted=false, actx=null;
+function fresh(){return {t:0,c:30,b:0,pc:[],pb:[],nc:0,nb:0,got:0,prog:0,hot:0,drunk:0,doze:0,cool:0,over:false,pops:[],yawn:0,nextY:7+Math.random()*5};}
+
+/* ---------- sound ---------- */
+function beep(f,d,type,v){ if(muted) return; try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)(); var o=actx.createOscillator(),g=actx.createGain(); o.type=type||"square"; o.frequency.value=f; g.gain.value=v||0.04; o.connect(g); g.connect(actx.destination); var n=actx.currentTime; g.gain.setValueAtTime(v||0.04,n); g.gain.exponentialRampToValueAtTime(0.0001,n+d); o.start(n); o.stop(n+d);}catch(e){} }
+function chord(){ [523,659,784,1047].forEach(function(f,i){ setTimeout(function(){beep(f,.22,"triangle",.06);},i*70); }); }
+
+/* ---------- drinks ---------- */
+function pour(kind){
+  if(!S||S.over||S.cool>0) return;
+  S.cool=.55;
+  if(kind==="c"){ S.nc++; S.pc.push({left:26,rate:26/5}); S.b=Math.max(0,S.b-3); beep(220,.08); beep(330,.1); }   // coffee sobers him a little
+  else { S.nb++; S.pb.push({left:24,rate:24/6}); S.c=Math.max(0,S.c-8); beep(160,.12,"sawtooth",.03); }             // beer makes him drowsy
+  $("nC").textContent=S.nc+" poured"; $("nB").textContent=S.nb+" opened";
+}
+function absorb(list,dt){ var add=0; for(var i=list.length-1;i>=0;i--){ var p=list[i], a=Math.min(p.left,p.rate*dt); p.left-=a; add+=a; if(p.left<=0.0001) list.splice(i,1);} return add; }
+
+/* ---------- loop ---------- */
+function step(now){
+  raf=requestAnimationFrame(step);
+  var dt=Math.min(.05,(now-last)/1000||0); last=now;
+  if(S.over){ draw(now); return; }
+  S.t+=dt; S.cool=Math.max(0,S.cool-dt);
+  if(S.t>=S.nextY){ S.c=Math.max(0,S.c-7); S.nextY=S.t+8+Math.random()*6; S.yawn=1.1; beep(140,.25,"sine",.04); }
+  S.yawn=Math.max(0,S.yawn-dt);
+  S.c=Math.max(0,Math.min(100,S.c+absorb(S.pc,dt)-0.9*dt));
+  S.b=Math.max(0,Math.min(100,S.b+absorb(S.pb,dt)-0.5*dt));
+  var ZC=zc(S.t); S.zc=ZC;
+  var inC=S.c>=ZC[0]&&S.c<=ZC[1], inB=S.b>=ZB[0]&&S.b<=ZB[1], zone=inC&&inB;
+  if(zone&&S.got<IDEAS.length){ S.prog+=dt; if(S.prog>=NEED[S.got]){ S.prog=0; idea(); } }
+  S.hot = S.c>=94 ? S.hot+dt : 0;
+  S.drunk = S.b>=62 ? S.drunk+dt : 0;
+  S.doze = (S.c<=6&&S.t>6) ? S.doze+dt : 0;
+  S.zone=zone;
+  hud(inC,inB);
+  draw(now);
+  if(S.hot>2.5) return end("jitter");
+  if(S.drunk>2.5||S.doze>4) return end(S.got>0?"nap":"sleep");
+  if(S.t>=NIGHT) return end(S.got>0?"win":"empty");
+}
+function idea(){
+  var name=IDEAS[S.got]; S.got++;
+  $("ideas").children[S.got-1].className="got";
+  var t=$("toast"); t.textContent=name; t.classList.add("on"); setTimeout(function(){t.classList.remove("on");},1500);
+  S.pops.push({life:1.6}); chord();
+}
+function clockText(t){ var m=Math.min(240,Math.floor(t/NIGHT*240)), h=Math.floor(m/60), mm=m%60; return (h===0?12:h)+":"+(mm<10?"0":"")+mm; }
+function hud(inC,inB){
+  $("clock").firstChild.nodeValue=clockText(S.t);
+  var Z=S.zc||zc(S.t); $("bandC").style.left=Z[0]+"%"; $("bandC").style.width=(Z[1]-Z[0])+"%";
+  $("fillC").style.width=S.c+"%"; $("pinC").style.left=S.c+"%";
+  $("fillB").style.width=S.b+"%"; $("pinB").style.left=S.b+"%";
+  $("gC").className="g c"+(S.c>=86?" hot":inC?" ok":""); $("gB").className="g b"+(S.b>=56?" hot":inB?" ok":"");
+  $("fillI").style.width=(S.got>=IDEAS.length?100:Math.min(100,S.prog/NEED[S.got]*100))+"%";
+  $("bC").disabled=$("bB").disabled=S.cool>0;
+}
+
+/* ---------- endings ---------- */
+var END={
+  win:function(){ var n=S.got; return ["4:00 a.m. The clock works.", n>=8?"All eight ideas are in the notebook. Nobody will believe this night happened.":n>=4?"Proof of History is on the page, with "+(n-1)+" more ideas beside it. Time to call some friends.":n>=2?"Proof of History is on the page, and "+(n-1)+" more. He sleeps on the keyboard, smiling.":"Proof of History is on the page. One idea was enough.","win"]; },
+  empty:function(){ return ["4:00 a.m. Empty notebook.","He never got awake enough and loose enough at the same time. He is back at his day job on Monday.","lose"]; },
+  nap:function(){ var n=S.got; return ["Asleep at "+clockText(S.t)+", notebook open.", n>1?"Proof of History is on the page with "+(n-1)+" more. He stopped early. It was enough.":"Proof of History is on the page. He stopped early. It was enough.","win"]; },
+  sleep:function(){ return ["Asleep at "+clockText(S.t)+".","The clock is never invented. Everyone uses an L2.","lose"]; },
+  jitter:function(){ return ["Too much coffee.","He rewrote the networking stack at "+clockText(S.t)+". It does not compile.","lose"]; }
+};
+function end(kind){
+  S.over=true; S.kind=kind;
+  var r=END[kind]();
+  $("vTitle").textContent=r[0]; $("vTitle").className="verdict "+r[2]; $("vLine").textContent=r[1];
+  $("sI").textContent=S.got; $("sC").textContent=S.nc; $("sB").textContent=S.nb;
+  var won = kind==="win"||kind==="nap";
+  var canon = won&&S.nc===2&&S.nb===1;
+  $("badge").hidden=!canon; if(canon) $("badge").textContent="Exactly two coffees and a beer. Just as the story goes.";
+  var line = won ? r[0]+" "+S.got+" of 8 ideas on "+S.nc+" coffee"+(S.nc===1?"":"s")+" and "+S.nb+" beer"+(S.nb===1?"":"s")+"." : r[0]+" "+r[1];
+  var url=location.origin+location.pathname;
+  $("share").href="https://x.com/intent/post?text="+encodeURIComponent(line+"\n\nTwo Coffees and a Beer")+"&url="+encodeURIComponent(url);
+  if(won) chord(); else beep(110,.5,"sawtooth",.05);
+  setTimeout(function(){ $("ovEnd").hidden=false; $("again").focus(); }, won?900:1300);
+}
+
+/* ---------- pixel scene ---------- */
+var cv=$("cv"), g=cv.getContext("2d"); g.imageSmoothingEnabled=false;
+function R(x,y,w,h,c){ g.fillStyle=c; g.fillRect(x|0,y|0,w|0,h|0); }
+var STARS=[]; (function(){ var s=11; for(var i=0;i<26;i++){ s=(s*73+19)%997; var x=16+(s%58); s=(s*73+19)%997; var y=14+(s%26); STARS.push([x,y,i%5]); } })();
+function draw(now){
+  var t=S?S.t:0, k=Math.min(1,t/NIGHT), ph=now/1000;
+  var jit = S&&S.c>=86&&!reduce ? (Math.random()<.5?1:-1) : 0;
+  var sleepy = S&&(S.b>=56||S.c<=10||S.yawn>0||(S.over&&(S.kind==="sleep"||S.kind==="nap")));
+  var zone = S&&S.zone&&!S.over;
+  // room
+  R(0,0,192,112,"#131d33"); R(0,88,192,24,"#0d1526"); R(0,87,192,1,"#22304f");
+  // window
+  R(12,10,66,46,"#2a3a5e"); R(14,12,62,42,"#081127");
+  R(14,12,62,42,"rgba(40,70,130,"+(0.05+k*0.22)+")");
+  for(var i=0;i<STARS.length;i++){ var st=STARS[i]; if(((ph*1.5+st[2])|0)%5!==0) R(st[0],st[1],1,1,"#cfd9ff"); }
+  var mx=18+k*50, my=34-Math.sin(k*Math.PI)*18; R(mx,my,6,6,"#f4ead7"); R(mx+1,my-1,4,8,"#f4ead7"); R(mx+3,my+1,2,2,"#d8cdb6");
+  var sk=[[14,44,8],[22,38,7],[29,46,9],[38,34,8],[46,42,10],[56,37,7],[63,45,13]];
+  for(i=0;i<sk.length;i++){ var b=sk[i]; R(b[0],b[1],b[2],54-b[1],"#0d1830"); for(var wy=b[1]+2;wy<52;wy+=4){ for(var wx=b[0]+1;wx<b[0]+b[2]-1;wx+=3){ var id=(wx*7+wy*13)%10; if(id>k*11) R(wx,wy,1,2,"#ffd08a"); } } }
+  R(44,12,2,42,"#2a3a5e"); R(14,32,62,2,"#2a3a5e");
+  // lamp light
+  g.fillStyle="rgba(255,208,138,.10)"; g.beginPath(); g.moveTo(168,44); g.lineTo(120,88); g.lineTo(192,88); g.lineTo(192,60); g.closePath(); g.fill();
+  R(170,40,2,36,"#3a4a70"); R(160,36,16,5,"#ffd08a"); R(162,41,12,1,"#fff3d6"); R(164,76,14,2,"#3a4a70");
+  // desk
+  R(54,78,138,4,"#6b4a30"); R(54,82,138,2,"#4a321f"); R(58,84,3,20,"#3a2718"); R(184,84,3,20,"#3a2718");
+  // monitor
+  R(104,44,48,30,"#2b3550"); R(106,46,44,25,"#060b14"); R(124,74,8,3,"#2b3550"); R(118,77,20,1,"#2b3550");
+  var rows=6, sp = S? (0.6+S.c/28) : 1;
+  for(i=0;i<rows;i++){ var off=((ph*sp*6+i*5)|0), w1=6+((off*7+i*11)%22), w2=4+((off*5+i*3)%12);
+    var col = (S&&S.c>=86) ? (((ph*14)|0)%2?"#ff6b5e":"#7a2d2a") : zone ? (i%2?"#14f195":"#9945ff") : "#55668f";
+    if(sleepy&&!zone) col="#2b3550";
+    R(108,48+i*4,w1,1,col); R(110+w1,48+i*4,Math.min(w2,148-(110+w1)),1,col); }
+  if(zone) R(106,46,44,25,"rgba(20,241,149,.07)");
+  // keyboard, notebook
+  R(108,76,30,2,"#3a4a70"); R(142,75,14,3,"#f4ead7"); R(142,75,14,1,"#d8cdb6"); if(S) for(i=0;i<Math.min(S.got,4);i++) R(144,76+ (i>1?1:0),2+ (i%2)*6,1,"#14f195");
+  // mugs and bottles
+  if(S){ for(i=0;i<Math.min(S.nc,7);i++){ var ux=58+i*6; R(ux,73,4,5,"#f4ead7"); R(ux+4,74,1,3,"#f4ead7"); R(ux,73,4,1,"#6b4426"); if(i===S.nc-1&&S.pc.length&&((ph*4)|0)%2) R(ux+1,70,1,2,"#93a0bd"); }
+         for(i=0;i<Math.min(S.nb,6);i++){ var bx=186-i*5; R(bx,69,3,9,"#7a5200"); R(bx+1,66,1,3,"#7a5200"); R(bx,72,3,3,"#f2b21b"); } }
+  // chair and person
+  var px=84+jit, bob = sleepy? 4 : ((ph*(zone?5:2))|0)%2;
+  R(px-2,62,3,30,"#22304f"); R(px-2,90,18,3,"#22304f"); R(px+6,93,2,10,"#22304f");
+  R(px+1,64+ (sleepy?2:0),14,22,"#3d5a9a"); R(px+1,64+(sleepy?2:0),14,3,"#4a6bb3");               // hoodie
+  R(px+12,72+(sleepy?3:0),14,3,"#3d5a9a"); R(px+24,73+(sleepy?3:0),4,2,"#e2b58c");                // arm, hand
+  var hx=px+4+(sleepy?4:0), hy=52+bob+(sleepy?6:0);
+  R(hx,hy,10,10,"#e2b58c"); R(hx,hy-2,10,4,"#2a2018"); R(hx-1,hy,2,6,"#2a2018");                  // head, hair
+  R(hx+7,hy+4,2,1,"#1a1205");                                                                    // eye
+  if(S&&S.c>=86) { R(hx+6,hy+3,3,3,"#fff"); R(hx+8,hy+4,1,1,"#000"); }
+  if(sleepy){ var z=((ph*2)|0)%3; g.fillStyle="#cfd9ff"; g.font="8px monospace"; g.fillText("z",hx+12+z*3,hy-2-z*3); }
+  // idea sparks
+  if(S){ for(i=S.pops.length-1;i>=0;i--){ var p=S.pops[i]; p.life-=1/60; if(p.life<=0){S.pops.splice(i,1);continue;} var a=1.6-p.life;
+      for(var q=0;q<10;q++){ var an=q/10*6.283, rr=4+a*22; R(hx+5+Math.cos(an)*rr,hy-4+Math.sin(an)*rr*0.6,2,2,q%2?"#14f195":"#9945ff"); } } }
+  if(zone&&((ph*3)|0)%2) { R(hx+3,hy-7,1,3,"#14f195"); R(hx+6,hy-9,1,4,"#14f195"); R(hx+9,hy-7,1,3,"#14f195"); }
+  // dawn tint at the very end
+  if(k>.9) R(0,0,192,112,"rgba(255,208,138,"+((k-.9)*0.6)+")");
+}
+
+/* ---------- wiring ---------- */
+function setup(){
+  var ol=$("ideas"); ol.textContent=""; IDEAS.forEach(function(n,i){ var li=document.createElement("li"); li.textContent=(i+1)+". "+n; ol.appendChild(li); });
+  var Z0=zc(0); $("bandC").style.left=Z0[0]+"%"; $("bandC").style.width=(Z0[1]-Z0[0])+"%";
+  $("bandB").style.left=ZB[0]+"%"; $("bandB").style.width=(ZB[1]-ZB[0])+"%";
+}
+function begin(){
+  S=fresh(); setup(); $("nC").textContent="0 poured"; $("nB").textContent="0 opened";
+  $("ovStart").hidden=true; $("ovEnd").hidden=true; last=performance.now();
+  cancelAnimationFrame(raf); raf=requestAnimationFrame(step);
+}
+$("start").addEventListener("click",begin); $("again").addEventListener("click",begin);
+$("bC").addEventListener("click",function(){pour("c");}); $("bB").addEventListener("click",function(){pour("b");});
+document.addEventListener("keydown",function(e){ if(e.repeat) return; var k=e.key.toLowerCase(); if(k==="c") pour("c"); else if(k==="b") pour("b"); });
+$("mute").addEventListener("click",function(){ muted=!muted; this.textContent=muted?"Sound off":"Sound on"; this.setAttribute("aria-pressed",muted?"true":"false"); });
+(function coin(){ if(!COIN.ca) return; ["coinStart","coinEnd"].forEach(function(id){ var el=$(id); el.hidden=false; el.textContent="";
+  var a=document.createElement("a"); a.href=COIN.url||("https://pump.fun/coin/"+COIN.ca); a.target="_blank"; a.rel="noopener"; a.textContent="$"+COIN.ticker;
+  el.appendChild(a); el.appendChild(document.createTextNode(" is the game's memecoin. It gives no claim on anything and can go to zero. Contract: "+COIN.ca)); }); })();
+setup(); S=fresh(); S.over=true; S.kind="idle"; hud(false,false); draw(0);
+window.__game={state:function(){return S;},pour:pour,begin:begin};
+})();
+</script>
+</body>
+</html>

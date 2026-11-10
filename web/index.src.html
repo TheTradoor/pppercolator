@@ -1,0 +1,464 @@
+<title>Pppercolator</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: an amber trading terminal. Phone first: chart, order ticket, positions, markets, checks, tape in one column; on wide screens markets left, chart and positions centre, ticket right. Single dark look by choice. */
+:root{
+  color-scheme:dark;
+  --tube:#120c04; --panel:#1b1206; --line:#4a3310; --dim:#a87a26; --amber:#ffb000; --hot:#ffd76a;
+  --up:#9be564; --down:#ff6b4a; --ink:#120c04;
+  --display:"VT323","IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+html,body{background:var(--tube)}
+body{color:var(--amber);font-family:var(--mono);font-size:13px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 28px;
+  background:radial-gradient(120% 80% at 50% 0%,#1f1507 0%,var(--tube) 70%)}
+.wrap{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;justify-content:space-between}
+h1{font-family:var(--display);font-weight:400;font-size:34px;line-height:.9;margin:0;letter-spacing:2px;color:var(--hot);text-shadow:0 0 14px rgba(255,176,0,.45)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);padding:2px 8px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.chip b{color:var(--amber);font-weight:500}
+.acct{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line)}
+.acct div{background:var(--panel);padding:6px 10px;min-width:0}
+.acct span{display:block;color:var(--dim);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase}
+.acct b{font-size:16px;font-weight:500;color:var(--hot);font-variant-numeric:tabular-nums}
+.grid{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+.grid>*{min-width:0}
+.a-chart{order:1}.a-ticket{order:2}.a-pos{order:3}.a-mk{order:4}.a-coin{order:5}.a-chk{order:6}.a-tape{order:7}
+@media(min-width:900px){
+  .acct{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .grid{grid-template-columns:230px minmax(0,1fr) 300px;grid-template-areas:"mk chart ticket" "coin pos ticket" "chk tape tape";grid-template-rows:auto 1fr auto;align-items:start}
+  .a-chart{grid-area:chart}.a-ticket{grid-area:ticket}.a-pos{grid-area:pos}.a-mk{grid-area:mk}.a-coin{grid-area:coin}.a-chk{grid-area:chk}.a-tape{grid-area:tape}
+  h1{font-size:40px}
+}
+.box{border:1px solid var(--line);background:var(--panel)}
+.box>h2{font-family:var(--display);font-weight:400;font-size:19px;letter-spacing:1px;margin:0;padding:2px 10px;background:var(--amber);color:var(--ink);display:flex;justify-content:space-between;align-items:center;gap:8px}
+.box>h2 span{font-family:var(--mono);font-size:11px}
+.pad{padding:10px}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th{text-align:right;font-weight:400;color:var(--dim);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;padding:5px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{text-align:right;padding:6px 8px;border-bottom:1px dashed #33230b;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+#mk tr{cursor:pointer}
+#mk tr:hover td{background:#24180a}
+#mk tr.sel td{background:#2c1d0a;color:var(--hot)}
+.up{color:var(--up)}.down{color:var(--down)}.dim{color:var(--dim)}
+.scroll{overflow-x:auto}
+.quote{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px;padding:8px 10px 0}
+.quote .px{font-family:var(--display);font-size:38px;line-height:1;color:var(--hot)}
+.quote small{color:var(--dim);font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+canvas{display:block;width:100%;height:260px}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+button{font:inherit;font-weight:600;letter-spacing:.06em;text-transform:uppercase;background:transparent;color:var(--amber);border:1px solid var(--amber);padding:8px 10px;cursor:pointer}
+button:hover{background:var(--amber);color:var(--ink)}
+button:focus-visible,input:focus-visible,#mk tr:focus-visible{outline:2px solid var(--hot);outline-offset:2px}
+.seg button{border-color:var(--line);color:var(--dim)}
+.seg button.on.long{background:var(--up);border-color:var(--up);color:var(--ink)}
+.seg button.on.short{background:var(--down);border-color:var(--down);color:var(--ink)}
+.field{display:flex;flex-direction:column;gap:4px;margin-top:10px}
+label,.lbl{color:var(--dim);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;display:flex;justify-content:space-between}
+input[type=text]{background:var(--tube);border:1px solid var(--line);color:var(--hot);font:inherit;font-size:16px;padding:8px;width:100%;box-sizing:border-box}
+input[type=range]{width:100%;accent-color:var(--amber)}
+.kv{display:flex;flex-direction:column;gap:3px;margin-top:10px;font-variant-numeric:tabular-nums}
+.kv div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed #33230b;padding-bottom:2px}
+.kv span{color:var(--dim)}
+#bGo{width:100%;margin-top:10px;padding:11px}
+#bGo.long{border-color:var(--up);color:var(--up)}#bGo.long:hover{background:var(--up);color:var(--ink)}
+#bGo.short{border-color:var(--down);color:var(--down)}#bGo.short:hover{background:var(--down);color:var(--ink)}
+button.ghost{border-color:var(--line);color:var(--dim);font-weight:400;padding:6px 8px;font-size:12px}
+td button{padding:3px 8px;font-size:11px}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px}
+.row button{flex:1 1 auto}
+.msg{min-height:3em;margin-top:8px;color:var(--hot)}
+.lamps{display:flex;flex-direction:column;gap:6px}
+.lamp{display:flex;align-items:center;gap:8px}
+.lamp i{flex:none;width:10px;height:10px;border-radius:50%;background:var(--up);box-shadow:0 0 8px var(--up)}
+.lamp.bad i{background:var(--down);box-shadow:0 0 8px var(--down)}
+.log{height:200px;overflow-y:auto;padding:8px 10px;font-size:12px}
+.log div{white-space:pre-wrap;overflow-wrap:anywhere}
+.log .liq{color:var(--down)}.log .you{color:var(--hot)}.log .ref{color:var(--dim)}
+.empty{color:var(--dim);padding:14px 10px}
+.foot{color:var(--dim);font-size:11.5px;max-width:90ch}
+.realbox{border:1px solid var(--amber);padding:8px;margin:8px 0;color:var(--hot)}
+.foot p{margin:0 0 6px}.foot summary{cursor:pointer;color:var(--amber);margin-bottom:6px}
+.foot a{color:var(--amber)}
+.ca{color:var(--amber);overflow-wrap:anywhere;user-select:all}
+a.btn{flex:1 1 auto;text-align:center;text-decoration:none;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--amber);border:1px solid var(--amber);padding:7px 10px}a.btn:hover{background:var(--amber);color:var(--ink)}
+a.chip{text-decoration:none}a.chip:hover{border-color:var(--amber)}
+.foot button{padding:1px 8px;font-size:11px}
+.banner{border:2px solid var(--down);color:var(--down);padding:10px;font-family:var(--display);font-size:24px}
+</style>
+<div class="wrap">
+  <div class="top">
+    <h1>PPPERCOLATOR</h1>
+    <div class="chips">
+      <a class="chip" href="https://pump.fun/coin/Ho7iohoM6UN96yoxzBNzz9aXZpNW3AyUVuEmBdAQpump" target="_blank" rel="noopener"><b>$PPP</b> on Pump.fun</a>
+      <a class="chip" href="https://pppercolator-launchpad.netlify.app/" target="_blank" rel="noopener"><b>Launchpad</b></a>
+      <span class="chip"><b id="mchip">paper money</b></span>
+      <span class="chip"><b id="pmode">simulated prices</b></span>
+      <span class="chip">engine <b>percolator@37cb14e</b></span>
+      <span class="chip">slot <b id="slot">0</b></span>
+    </div>
+  </div>
+  <div id="broken" class="banner" hidden>INVARIANT BROKEN. Simulation halted. Copy the replay link and report it.</div>
+  <div class="acct">
+    <div><span>Equity</span><b id="eq">$0</b></div>
+    <div><span>Free margin</span><b id="free">$0</b></div>
+    <div><span>Margin in use</span><b id="im">$0</b></div>
+    <div><span>Open PnL</span><b id="upnl">$0</b></div>
+  </div>
+  <div class="grid">
+    <div class="box a-chart">
+      <h2><span id="selname" style="font-family:var(--display);font-size:19px">SOL-PERP</span><span id="src">oracle price</span></h2>
+      <div class="quote"><span class="px" id="bigpx">$0</span><span id="chg" class="up">+0.00%</span><small id="chgl">session</small><small id="hrs"></small></div>
+      <div class="pad"><canvas id="chart" width="1100" height="520" aria-label="Candle chart of the selected market"></canvas></div>
+    </div>
+    <div class="box a-ticket">
+      <h2>ORDER TICKET <span id="feeLbl">paper, 0.10% fee</span></h2>
+      <div class="pad">
+        <div class="seg" id="modeSeg" hidden style="margin-bottom:8px"><button type="button" id="mPaper" class="on long">Paper</button><button type="button" id="mReal" class="long">Real, beta</button></div>
+        <div id="realBox" hidden class="realbox"><div id="rStat">Not connected.</div>
+          <div class="row" style="margin-top:6px"><button type="button" id="bConn">Connect wallet</button><button type="button" id="bEnable" hidden>Enable trading</button><button type="button" class="ghost" id="bOff" hidden>Remove trading key</button></div>
+        </div>
+        <div class="seg"><button type="button" id="sLong" class="on long">Long</button><button type="button" id="sShort" class="short">Short</button></div>
+        <div class="field"><label for="usd">Margin to use, USD <span id="maxm"></span></label><input id="usd" type="text" inputmode="decimal" value="1000"></div>
+        <div class="field"><label for="lev">Leverage <span id="levv">5x</span></label><input id="lev" type="range" min="1" max="10" step="1" value="5"></div>
+        <div class="kv">
+          <div><span>Position size</span><b id="oSize">0</b></div>
+          <div><span>Notional</span><b id="oNot">$0</b></div>
+          <div><span>Est. liquidation price</span><b id="oLiq">n/a</b></div>
+        </div>
+        <button type="button" id="bGo" class="long">Open long</button>
+        <div id="confirm" hidden class="realbox"><div id="cText"></div>
+          <div class="row" style="margin-top:6px"><button type="button" id="bSend">Send real order</button><button type="button" class="ghost" id="bCancel">Cancel</button></div>
+        </div>
+        <div class="msg" id="msg"></div>
+        <div class="row" id="brk"><span class="lbl">Break it</span>
+          <button class="ghost" id="bDn" type="button">-4%</button>
+          <button class="ghost" id="bUp" type="button">+4%</button>
+          <button class="ghost" id="bCrash" type="button">Crash x10</button>
+          <button class="ghost" id="bGap" type="button">-30% gap</button>
+        </div>
+        <div class="row">
+          <button class="ghost" id="bMode" type="button">Use simulation</button>
+          <button class="ghost" id="bReset" type="button">New session</button>
+          <button class="ghost" id="bPause" type="button">Pause</button>
+          <button class="ghost" id="bShare" type="button">Copy replay link</button>
+        </div>
+      </div>
+    </div>
+    <div class="box a-pos">
+      <h2>POSITIONS <span id="npos">none</span></h2>
+      <div class="scroll"><table><thead><tr><th>Market</th><th>Size</th><th>Entry</th><th>Mark</th><th>PnL</th><th>Est. liq</th><th></th></tr></thead><tbody id="pos"></tbody></table></div>
+      <div class="empty" id="posEmpty">No open positions. Pick a market, set margin and leverage, and open one.</div>
+    </div>
+    <div class="box a-mk">
+      <h2>MARKETS</h2>
+      <div class="scroll"><table><thead><tr><th>Market</th><th>Price</th><th id="mkch">Session</th></tr></thead><tbody id="mk"></tbody></table></div>
+    </div>
+    <div class="box a-coin">
+      <h2>$PPP <span>team memecoin</span></h2>
+      <div class="pad">
+        <div class="kv" style="margin-top:0">
+          <div><span>Price</span><b id="cPx">loading</b></div>
+          <div><span>Market cap</span><b id="cMc">loading</b></div>
+          <div><span>Holders</span><b id="cH">loading</b></div>
+          <div><span>Liquidity</span><b id="cL">loading</b></div>
+          <div><span>Site fees earned</span><b id="cF">n/a</b></div>
+          <div><span>Buybacks made</span><b>none yet</b></div>
+        </div>
+        <div class="dim" id="cNote" style="margin-top:8px;font-size:11.5px">Live from Jupiter. Not a price forecast.</div>
+        <div class="dim" style="margin-top:4px;font-size:11.5px">Site fees are the 0.03% builder fee on real orders, read live from Hyperliquid. The team uses them to buy back $PPP. Each buyback will be listed here with its transaction.</div>
+        <div class="row"><a class="btn" href="https://pump.fun/coin/Ho7iohoM6UN96yoxzBNzz9aXZpNW3AyUVuEmBdAQpump" target="_blank" rel="noopener">Open on Pump.fun</a></div>
+      </div>
+    </div>
+    <div class="box a-chk">
+      <h2>SOLVENCY <span><b id="checks">0</b> passed</span></h2>
+      <div class="pad">
+        <div class="lamps">
+          <div class="lamp" id="l1"><i></i>Every paper dollar accounted for</div>
+          <div class="lamp" id="l2"><i></i>Vault covers balances and insurance</div>
+          <div class="lamp" id="l3"><i></i>Engine state valid</div>
+        </div>
+        <div class="kv">
+          <div><span>Insurance fund</span><b id="ins">$0</b></div>
+          <div><span>Margin calls</span><b id="nliq">0</b></div>
+          <div><span>Refused by engine</span><b id="nref">0</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="box a-tape">
+      <h2>TAPE <span>you, six bots and the house</span></h2>
+      <div class="log" id="log" aria-live="off"></div>
+    </div>
+  </div>
+  <div class="foot">
+    <p>Real trading on Hyperliquid from your own wallet (beta), and paper trading on live prices. The paper mode runs on Anatoly Yakovenko's <a href="https://github.com/aeyakovenko/percolator">Percolator</a> engine; independent project, not affiliated with him.</p>
+    <p>$PPP contract: <span class="ca" id="ca">Ho7iohoM6UN96yoxzBNzz9aXZpNW3AyUVuEmBdAQpump</span> <button class="ghost" id="bCa" type="button">Copy</button></p>
+    <details><summary>How it works and what to know</summary>
+      <p>Real mode: orders go from your browser to Hyperliquid, signed by a trading-only key you approve; it cannot withdraw. Your funds stay in your own Hyperliquid account and this site never holds them. A 0.03% site fee applies to real orders. Real mode covers SOL, BTC and ETH, is in beta, and is not available to US persons. Trading with leverage can lose your whole margin.</p>
+      <p>Paper mode: no real funds are involved, and nothing here is audited. Prices, one-minute candles and funding rates come from Hyperliquid's public feed: its main perps for crypto and its XYZ market for stock perps. Your paper positions are marked to those prices; paper funding is not charged. If the feed cannot be reached, prices are a random simulation; the chip at the top says which.</p>
+      <p>Each trader faces a house account that takes the other side. When the engine certifies an account below maintenance margin, the house closes it at the oracle price; if that is refused, the engine's own liquidation runs. Liquidation prices shown are estimates. The engine is Percolator at commit 37cb14e, Apache-2.0, compiled to WebAssembly without changes.</p>
+      <p>$PPP on Pump.fun was launched by the Pppercolator team. It is a memecoin. It gives no claim on this site, its fees or the engine. Check the contract address before you buy; copies exist.</p>
+    </details>
+  </div>
+</div>
+<script>__HLJS__</script>
+<script>
+const WASM_B64="__WASM__";
+// Live source: Hyperliquid's public info API (keyless). Crypto perps from the main venue, stock perps from its XYZ market.
+const MK=[["SOL",82,"","SOL"],["BTC",73000,"","BTC"],["ETH",2000,"","ETH"],["NVDA",170,"xyz","xyz:NVDA"],["TSLA",377,"xyz","xyz:TSLA"],["AAPL",347,"xyz","xyz:AAPL"]];
+const HL="https://api.hyperliquid.xyz/info";let info=MK.map(()=>null),realC=MK.map(()=>null),realAt=MK.map(()=>0);
+let live=false,latest=null,closed=[],poll=null,lastOk=0;
+const U=1e6,BOTS=[1,2,3,4,5,6],TRADERS=7;
+let w,rnd,seed,tick=0,sel=0,side=1,paused=false,halted=false,acts=[],px=[],open0=[],nLiq=0,nRef=0,checks=0,timer=null,S=null;
+let candles=[],entry=[0,0,0,0,0,0];
+// Real mode: orders go from this browser to Hyperliquid, signed by a trading-only key the user approved. Beta.
+const REAL_ON=!!window.PPPHL,BUILDER="0x4bf1b0952d7011e6b6768ef4af4255a6534c0298",BUILDER_F=30;let real=false,RA=null,pending=null,builderOk=false,builderLive=false;const CANDLE=4,MM=0.05;
+const $=id=>document.getElementById(id);
+const fmt=(n,d=2)=>n.toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});
+const usd=s=>"$"+fmt(Number(s)/U);
+function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function state(){const p=w.sim_state(),n=w.sim_state_len();return JSON.parse(new TextDecoder().decode(new Uint8Array(w.memory.buffer,p,n)))}
+function log(t,c){const l=$("log"),d=document.createElement("div");if(c)d.className=c;d.textContent=String(tick).padStart(5,"0")+"  "+t;l.prepend(d);while(l.childElementCount>120)l.lastChild.remove()}
+function qFor(i,dollars){return BigInt(Math.round(dollars*U*U/px[i]))}
+function who(a){return a===0?"YOU":"BOT-"+a}
+function trade(a,i,q,quiet){
+  const ok=w.sim_trade(a,i,q,10n);
+  if(!ok){nRef++;const e=state().err;if(!quiet)log(who(a)+" order refused by engine ("+e+")","ref");return e}
+  return ""
+}
+function setPrice(i,p){const n=px.slice();n[i]=Math.max(1,Math.round(p));return tickTo(n)}
+function report(before){
+  const tk=w.sim_last_takeover(),lq=w.sim_last_crank();if(!tk&&!lq)return;
+  const after=state();
+  for(let a=0;a<TRADERS;a++){const bit=1<<a;if(!((tk|lq)&bit))continue;
+    const moved=MK.map((m,i)=>before.accounts[a].pos[i]!==after.accounts[a].pos[i]?m[0]:null).filter(Boolean).join(" ");
+    nLiq++;log((lq&bit?"ENGINE LIQUIDATED ":"MARGIN CALL, HOUSE CLOSED ")+who(a)+(moved?"  "+moved:""),a===0?"liq you":"liq")}
+}
+function tickTo(next){const before=state();if(!w.sim_tick(...next.map(p=>BigInt(p)))){nRef++;return state().err}px=next;report(before);return ""}
+function bots(){
+  S=state();
+  for(const b of BOTS){const A=S.accounts[b],r=rnd();
+    const has=A.pos.findIndex(x=>x!=="0");
+    if(has<0){
+      if(Number(A.capital)<200*U){if(rnd()<.2){w.sim_deposit(b,BigInt(5000*U));log("BOT-"+b+" reloads $5,000")}continue}
+      if(r<.22){const i=Math.floor(rnd()*MK.length),lev=3+rnd()*6,dir=rnd()<.5?1n:-1n;
+        const d=Number(A.equity)/U*lev,q=qFor(i,d)*dir;
+        if(!trade(b,i,q,true))log("BOT-"+b+" "+(dir>0n?"long ":"short ")+MK[i][0]+" $"+fmt(d,0)+" at "+fmt(lev,1)+"x")}
+    }else if(r<.07){if(!trade(b,has,-BigInt(A.pos[has]),true))log("BOT-"+b+" closes "+MK[has][0])}
+  }
+}
+function check(){
+  S=state();const v=S.inv;
+  $("l1").classList.toggle("bad",!v.conserved);$("l2").classList.toggle("bad",!v.covered);$("l3").classList.toggle("bad",!v.shape);
+  if(v.conserved&&v.covered&&v.shape)checks++;else{halted=true;$("broken").hidden=false;log("INVARIANT BROKEN","liq")}
+}
+function step(){
+  tick++;
+  // Live: follow the real price, moving at most 3.9% per slot because the engine caps each slot's move.
+  const next=live?px.map((p,i)=>latest&&latest[i]?Math.round(Math.max(p*0.961,Math.min(p*1.039,latest[i]))):p)
+    :px.map((p,i)=>{const trend=Math.sin((tick+i*37)/45)*0.0025,r=(rnd()-.5)*0.03+trend;return Math.max(1,Math.round(p*(1+Math.max(-.035,Math.min(.035,r)))))});
+  tickTo(next);
+  pushCandles();
+  bots();check();
+}
+function act(a,silent){ // a=[code,asset,value]
+  const [c,i,v]=a;let e="";
+  if(c==="L"||c==="S"){const before=Number(state().accounts[0].pos[i]),q=qFor(i,v)*(c==="L"?1n:-1n);e=trade(0,i,q,true);
+    if(!e){const dq=Number(q),after=before+dq;
+      if(before===0||Math.sign(before)!==Math.sign(after))entry[i]=px[i];
+      else if(Math.abs(after)>Math.abs(before))entry[i]=(entry[i]*Math.abs(before)+px[i]*Math.abs(dq))/Math.abs(after);
+      log("YOU "+(c==="L"?"long ":"short ")+MK[i][0]+" $"+fmt(v,0)+" at $"+fmt(px[i]/U,px[i]>=1000*U?0:2),"you")}}
+  else if(c==="C"){const p=state().accounts[0].pos[i];if(p!=="0"){e=trade(0,i,-BigInt(p),true);if(!e){const pnl=Number(p)/U*(px[i]-entry[i])/U;log("YOU close "+MK[i][0]+"  PnL "+(pnl>=0?"+":"-")+"$"+fmt(Math.abs(pnl)),"you")}}}
+  else if(c==="K"){e=setPrice(i,px[i]+Math.sign(v)*Math.floor(px[i]*Math.abs(v)/100));log("SHOCK "+MK[i][0]+" "+(v>0?"+":"")+v+"%"+(e?"  refused by engine ("+e+")":""),e?"ref":"you");if(!e)check()}
+  if(!silent){
+    if(e)$("msg").textContent=c==="K"?"The engine refused that price move ("+e+"). It only accepts moves it can prove are covered by margin.":"The engine refused that order ("+e+"). Most often that means it needs more margin than you have free.";
+    else $("msg").textContent=c==="K"?"Price moved. Any account under the line gets closed out.":c==="C"?"Position closed at the oracle price.":"Order filled at the oracle price.";
+  }
+  return e
+}
+function user(a){if(halted)return;if(live&&a[0]==="K")return;acts.push([tick,...a]);act(a);render()}
+function boot(sd,replay){
+  seed=sd>>>0;rnd=mulberry(seed);tick=0;acts=[];candles=MK.map(()=>[]);entry=[0,0,0,0,0,0];nLiq=0;nRef=0;checks=0;halted=false;$("broken").hidden=true;$("log").textContent="";
+  px=(live&&latest&&latest.every(Boolean))?latest.slice():MK.map(m=>m[1]*U);open0=px.slice();
+  $("pmode").textContent=live?"live prices":"simulated prices";$("brk").hidden=live;$("bShare").hidden=live;$("bMode").textContent=live?"Use simulation":"Use live prices";
+  w.sim_init(...px.map(p=>BigInt(p)),1000n,500n,50n,400n);
+  w.sim_deposit(0,BigInt(10000*U));for(const b of BOTS)w.sim_deposit(b,BigInt(5000*U));for(let a=0;a<TRADERS;a++)w.sim_deposit(TRADERS+a,BigInt(2000000*U));
+  pushCandles();
+  if(replay){let k=0;const end=replay.end;
+    while(tick<end){while(k<replay.acts.length&&replay.acts[k][0]===tick){const a=replay.acts[k++];acts.push(a);act(a.slice(1),true)}step();if(halted)break}
+    while(k<replay.acts.length){const a=replay.acts[k++];acts.push(a);act(a.slice(1),true)}
+    $("msg").textContent="Replayed a shared session of "+end+" slots. It is live again from here."}
+  else{if(!live)for(let i=0;i<120;i++)step();$("msg").textContent=live?"Live prices, paper money. You start with $10,000 and the engine allows up to 10x.":"You start with $10,000 of paper money. The engine allows up to 10x."}
+  render()
+}
+function pushCandles(){MK.forEach((m,i)=>{const cs=candles[i],p=px[i];let c=cs[cs.length-1];
+  if(!c||c.n>=CANDLE){c={o:c?c.c:p,h:p,l:p,c:p,n:0};if(cs.length)c.h=Math.max(c.o,p),c.l=Math.min(c.o,p);cs.push(c);if(cs.length>90)cs.shift()}
+  c.h=Math.max(c.h,p);c.l=Math.min(c.l,p);c.c=p;c.n++})}
+const pf=p=>"$"+fmt(p/U,p>=1000*U?0:2);
+const sgn=(v,d=2)=>(v>=0?"+":"-")+"$"+fmt(Math.abs(v),d);
+// Estimated price of market i at which equity meets the maintenance requirement, other prices held.
+function liqEst(A,i,q){const E=Number(A.equity)/U,m=px[i]/U,qq=q/U,otherMM=Number(A.mm)/U-MM*Math.abs(qq)*m,den=MM*Math.abs(qq)-qq;
+  if(!qq||!den)return 0;const p=(E-qq*m-otherMM)/den;return p>0&&((qq>0&&p<m)||(qq<0&&p>m))?p:0}
+function ticket(){
+  const A=S.accounts[0],free=real?(RA?parseFloat(RA.withdrawable):0):Math.max(0,(Number(A.equity)-Number(A.im))/U),lev=+$("lev").value,m=amount();
+  $("levv").textContent=lev+"x";$("maxm").textContent="free $"+fmt(free,0);
+  const not=m*lev,units=not/(px[sel]/U);
+  $("oSize").textContent=fmt(units,units>=100?1:4)+" "+MK[sel][0];$("oNot").textContent="$"+fmt(not,0);
+  const mark=px[sel]/U,liq=lev>1?(side>0?mark*(1-1/lev)/(1-MM):mark*(1+1/lev)/(1+MM)):0;
+  $("oLiq").textContent=m&&liq>0&&(side<0||liq<mark)?"$"+fmt(liq,mark>=1000?0:2):"n/a";
+  const g=$("bGo");g.className=side>0?"long":"short";g.textContent=(real?"Review ":"Open ")+(side>0?"long ":"short ")+MK[sel][0];
+  if(real){const stock=MK[sel][2]==="xyz";g.disabled=stock||!PPPHL.hasAgent();g.style.opacity=g.disabled?.45:1;if(stock)g.textContent="Stock perps are paper only for now"}else{g.disabled=false;g.style.opacity=1}
+  $("sLong").className="long"+(side>0?" on":"");$("sShort").className="short"+(side<0?" on":"");
+}
+function renderReal(){
+  $("ins").textContent=usd(S.insurance);$("checks").textContent=checks;
+  const pb=$("pos");pb.textContent="";let n=0,upnl=0;
+  (RA?RA.positions:[]).forEach(p=>{const q=parseFloat(p.szi);if(!q)return;n++;const pnl=parseFloat(p.unrealizedPnl)||0;upnl+=pnl;const mark=q?parseFloat(p.positionValue)/Math.abs(q):0,ep=parseFloat(p.entryPx),lq=parseFloat(p.liquidationPx);
+    const tr=document.createElement("tr");
+    [[p.coin+(q>0?" long":" short"),q>0?"up":"down"],[fmt(Math.abs(q),4),""],["$"+fmt(ep,ep>=1000?0:2),""],["$"+fmt(mark,mark>=1000?0:2),""],[sgn(pnl),pnl>=0?"up":"down"],[lq>0?"$"+fmt(lq,lq>=1000?0:2):"n/a","dim"]].forEach(([t,c])=>{const td=document.createElement("td");td.textContent=t;if(c)td.className=c;tr.appendChild(td)});
+    const td=document.createElement("td"),b=document.createElement("button");b.type="button";b.textContent="Close";b.onclick=()=>review({close:true,coin:p.coin,size:Math.abs(q),isBuy:q<0});td.appendChild(b);tr.appendChild(td);pb.appendChild(tr)});
+  $("posEmpty").hidden=n>0;$("posEmpty").textContent=PPPHL.user()?"No open positions on Hyperliquid.":"Connect a wallet to see your Hyperliquid positions.";$("npos").textContent=n?n+" open":"none";
+  const av=RA?parseFloat(RA.accountValue):0,wd=RA?parseFloat(RA.withdrawable):0,mu=RA?parseFloat(RA.marginUsed):0;
+  $("eq").textContent="$"+fmt(av);$("free").textContent="$"+fmt(wd);$("im").textContent="$"+fmt(mu);const up=$("upnl");up.textContent=sgn(upnl);up.className=upnl>0?"up":upnl<0?"down":"";
+}
+async function refreshReal(){if(!real||!PPPHL.user())return;try{RA=await PPPHL.account()}catch(e){}
+  if(BUILDER&&!builderOk){try{builderOk=(await PPPHL.maxBuilderFee(BUILDER))>=BUILDER_F}catch(e){}}
+  const u=PPPHL.user();$("rStat").textContent=u?("Wallet "+u.slice(0,6)+"..."+u.slice(-4)+(PPPHL.hasAgent()?". Trading enabled in this browser.":". Enable trading to place orders: one signature, it creates a trading-only key that cannot withdraw.")+(RA&&parseFloat(RA.accountValue)<10?" Your Hyperliquid balance is under $10. Deposit USDC at app.hyperliquid.xyz first.":"")):"Not connected.";
+  $("bConn").hidden=!!u;$("bEnable").hidden=!u||PPPHL.hasAgent();$("bOff").hidden=!PPPHL.hasAgent();render()}
+function setMode(r){real=r;pending=null;$("confirm").hidden=true;$("realBox").hidden=!r;$("mPaper").className="long"+(r?"":" on");$("mReal").className="long"+(r?" on":"");
+  $("mchip").textContent=r?"real money, Hyperliquid":"paper money";$("feeLbl").textContent=r?"real, 0.03% site fee":"paper, 0.10% fee";$("brk").hidden=r||live;$("bMode").hidden=r;$("bShare").hidden=r||live;
+  $("posEmpty").textContent="No open positions. Pick a market, set margin and leverage, and open one.";
+  $("msg").textContent=r?"Real mode sends real orders to Hyperliquid from your own wallet. This site never holds your funds. Not available to US persons. Start small.":"Paper mode. Nothing here uses real funds.";
+  if(r)refreshReal();else render()}
+function review(o){
+  if(!PPPHL.hasAgent()){$("msg").textContent="Connect your wallet and enable trading first.";return}
+  pending=o;const p=px[MK.findIndex(m=>m[3]===o.coin)]/U||0,not=o.size*p,fee=BUILDER&&builderOk&&builderLive?not*BUILDER_F/100000:0;
+  $("cText").textContent=(o.close?"CLOSE ":"")+(o.isBuy?"BUY ":"SELL ")+fmt(o.size,4)+" "+o.coin+" at market on Hyperliquid. About $"+fmt(not,0)+" notional"+(o.close?"":" at "+o.lev+"x cross")+". Up to 1% slippage."+(fee?" Site fee about $"+fmt(fee)+".":" No site fee.")+" This is a real order.";
+  $("confirm").hidden=false}
+function render(){
+  S=state();const A=S.accounts[0];
+  $("slot").textContent=S.slot;$("selname").textContent=MK[sel][0]+"-PERP";
+  const chOf=i=>live&&info[i]&&info[i].prev>0?(px[i]/U/info[i].prev-1)*100:(px[i]/open0[i]-1)*100;
+  const ch0=chOf(sel);$("bigpx").textContent=pf(px[sel]);const cg=$("chg");cg.textContent=(ch0>=0?"+":"")+fmt(ch0)+"%";cg.className=ch0>=0?"up":"down";
+  const I=live?info[sel]:null;$("chgl").textContent=I?"24h":"session";
+  $("hrs").textContent=I?"funding "+(I.funding>=0?"+":"")+(I.funding*100).toFixed(4)+"%/h   24h vol $"+(I.vol>=1e9?fmt(I.vol/1e9)+"B":fmt(I.vol/1e6,1)+"M"):"";
+  $("src").textContent=live?"Hyperliquid mark price":"simulated";if(live)pullCandles(sel);
+  $("mkch").textContent=live?"24h":"Session";const tb=$("mk");tb.textContent="";
+  MK.forEach((m,i)=>{const tr=document.createElement("tr");if(i===sel)tr.className="sel";tr.tabIndex=0;
+    const ch=chOf(i);
+    [m[0],pf(px[i]),(ch>=0?"+":"")+fmt(ch)+"%"].forEach((t,k)=>{const td=document.createElement("td");td.textContent=t;if(k===2)td.className=ch>=0?"up":"down";tr.appendChild(td)});
+    tr.onclick=()=>{sel=i;render()};tr.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();sel=i;render()}};tb.appendChild(tr)});
+  if(real){renderReal();ticket();draw();return}
+  const pb=$("pos");pb.textContent="";let n=0,upnl=0;
+  MK.forEach((m,i)=>{const q=Number(A.pos[i]);if(!q){entry[i]=0;return}n++;
+    if(!entry[i])entry[i]=px[i];
+    const pnl=q/U*(px[i]-entry[i])/U;upnl+=pnl;const lq=liqEst(A,i,q);
+    const tr=document.createElement("tr");
+    const cells=[[m[0]+(q>0?" long":" short"),q>0?"up":"down"],[fmt(Math.abs(q)/U,Math.abs(q)/U>=100?1:4),""],[pf(entry[i]),""],[pf(px[i]),""],[sgn(pnl),pnl>=0?"up":"down"],[lq?"$"+fmt(lq,lq>=1000?0:2):"n/a","dim"]];
+    cells.forEach(([t,c])=>{const td=document.createElement("td");td.textContent=t;if(c)td.className=c;tr.appendChild(td)});
+    const td=document.createElement("td"),b=document.createElement("button");b.type="button";b.textContent="Close";b.onclick=()=>user(["C",i,0]);td.appendChild(b);tr.appendChild(td);pb.appendChild(tr)});
+  $("posEmpty").hidden=n>0;$("npos").textContent=n?n+" open":"none";
+  const eq=Number(A.equity)/U,im=Number(A.im)/U;
+  $("eq").textContent="$"+fmt(eq);$("free").textContent="$"+fmt(Math.max(0,eq-im));$("im").textContent="$"+fmt(im);
+  const up=$("upnl");up.textContent=sgn(upnl);up.className=upnl>0?"up":upnl<0?"down":"";
+  $("ins").textContent=usd(S.insurance);$("nliq").textContent=nLiq;$("nref").textContent=nRef;$("checks").textContent=checks;
+  ticket();draw()
+}
+function draw(){
+  const c=$("chart"),g=c.getContext("2d"),W=c.width,H=c.height,cs=getComputedStyle(document.documentElement);
+  const tok=n=>cs.getPropertyValue(n).trim(),up=tok("--up"),down=tok("--down"),line=tok("--line"),dim=tok("--dim"),amber=tok("--amber");
+  g.clearRect(0,0,W,H);let d=candles[sel]||[];if(live&&realC[sel]){d=realC[sel].slice();const z=d[d.length-1],p=px[sel];d[d.length-1]={o:z.o,h:Math.max(z.h,p),l:Math.min(z.l,p),c:p}}if(!d.length)return;
+  let lo=Math.min(...d.map(x=>x.l)),hi=Math.max(...d.map(x=>x.h));const e=entry[sel];if(e){lo=Math.min(lo,e);hi=Math.max(hi,e)}
+  const pad=(hi-lo)*.1||hi*.002;lo-=pad;hi+=pad;
+  const R=150,L=10,T=14,B=14,n=Math.max(d.length,40),cw=(W-L-R)/n,Y=v=>T+(hi-v)/(hi-lo)*(H-T-B);
+  const dp=hi>=1000*U?0:2;g.font="24px 'IBM Plex Mono',monospace";g.textBaseline="middle";
+  for(let k=0;k<=4;k++){const v=lo+(hi-lo)*k/4,y=Y(v);g.strokeStyle=line;g.lineWidth=1;g.setLineDash([3,6]);g.beginPath();g.moveTo(L,y);g.lineTo(W-R,y);g.stroke();g.setLineDash([]);
+    g.fillStyle=dim;g.textAlign="left";g.fillText(fmt(v/U,dp),W-R+10,Math.max(T+12,Math.min(H-B-12,y)))}
+  d.forEach((x,k)=>{const cx=L+(k+.5)*cw,col=x.c>=x.o?up:down;g.strokeStyle=col;g.fillStyle=col;g.lineWidth=2;
+    g.beginPath();g.moveTo(cx,Y(x.h));g.lineTo(cx,Y(x.l));g.stroke();
+    const y1=Y(Math.max(x.o,x.c)),y2=Y(Math.min(x.o,x.c));g.fillRect(cx-cw*.32,y1,cw*.64,Math.max(2,y2-y1))});
+  if(e){const y=Y(e);g.strokeStyle=amber;g.lineWidth=2;g.setLineDash([10,6]);g.beginPath();g.moveTo(L,y);g.lineTo(W-R,y);g.stroke();g.setLineDash([]);
+    g.fillStyle=amber;g.fillRect(W-R+4,y-15,R-8,30);g.fillStyle=tok("--ink");g.font="20px 'IBM Plex Mono',monospace";g.fillText(fmt(e/U,dp),W-R+10,y);g.fillStyle=amber;g.textAlign="right";g.fillText("entry",W-R-6,y-16)}
+}
+const hex=s=>Array.from(new TextEncoder().encode(s),b=>b.toString(16).padStart(2,"0")).join("");
+const unhex=h=>new TextDecoder().decode(new Uint8Array(h.match(/../g).map(x=>parseInt(x,16))));
+function shareHash(){return "r"+hex(JSON.stringify({s:seed,e:tick,a:acts}))}
+function readHash(){try{const h=location.hash.slice(1);if(h[0]!=="r"||h.length<8)return null;const o=JSON.parse(unhex(h.slice(1)));if(typeof o.s!=="number"||!Array.isArray(o.a)||o.e>20000)return null;return{seed:o.s,end:o.e,acts:o.a}}catch(e){return null}}
+function amount(){const v=parseFloat(String($("usd").value).replace(/[^0-9.]/g,""));return v>0?Math.min(v,5e5):0}
+$("sLong").onclick=()=>{side=1;ticket()};$("sShort").onclick=()=>{side=-1;ticket()};
+$("usd").oninput=()=>{if(S)ticket()};$("lev").oninput=()=>{if(S)ticket()};
+$("bGo").onclick=()=>{const lev=+$("lev").value,v=amount()*lev;if(!v){$("msg").textContent="Enter the margin to use first.";return}
+  if(!real){user([side>0?"L":"S",sel,v]);return}
+  if(v<10){$("msg").textContent="Hyperliquid's minimum order is $10 notional.";return}
+  if(RA&&amount()>parseFloat(RA.withdrawable)){$("msg").textContent="That is more margin than you have free on Hyperliquid.";return}
+  review({coin:MK[sel][3],isBuy:side>0,size:v/(px[sel]/U),lev})};
+$("bCancel").onclick=()=>{pending=null;$("confirm").hidden=true};
+$("bSend").onclick=async()=>{const o=pending;if(!o)return;pending=null;$("confirm").hidden=true;$("msg").textContent="Sending order to Hyperliquid...";
+  try{const b=BUILDER&&builderOk&&builderLive?{b:BUILDER,f:BUILDER_F}:null;const r=o.close?await PPPHL.closePosition(o.coin,b):await PPPHL.marketOrder({coin:o.coin,isBuy:o.isBuy,size:o.size,leverage:o.lev,builder:b});
+    $("msg").textContent=r.filled?"Filled "+r.totalSz+" "+o.coin+" at $"+r.avgPx+" on Hyperliquid.":"Order was not filled. Nothing was traded.";log("REAL "+(o.isBuy?"buy ":"sell ")+o.coin+(r.filled?" filled "+r.totalSz+" at $"+r.avgPx:" not filled"),"you")}
+  catch(e){$("msg").textContent="Hyperliquid rejected the order: "+e.message}
+  refreshReal()};
+$("bConn").onclick=async()=>{try{$("rStat").textContent="Waiting for your wallet...";await PPPHL.connect();await refreshReal()}catch(e){$("rStat").textContent=e.message}};
+$("bEnable").onclick=async()=>{try{$("rStat").textContent="Approve the trading key in your wallet...";await PPPHL.enableTrading();if(BUILDER&&!builderOk){try{await PPPHL.approveBuilder(BUILDER,(BUILDER_F/1000)+"%")}catch(e){}}await refreshReal()}catch(e){$("rStat").textContent="Not enabled: "+e.message}};
+$("bOff").onclick=()=>{PPPHL.disableTrading();refreshReal()};
+$("mPaper").onclick=()=>setMode(false);$("mReal").onclick=async()=>{if(!live&&!(await goLive())){$("msg").textContent="Real mode needs live prices, and they could not be reached.";return}if(!live)return;boot(Math.floor(Math.random()*2**31));setMode(true)};
+$("bDn").onclick=()=>user(["K",sel,-4]);$("bUp").onclick=()=>user(["K",sel,4]);$("bGap").onclick=()=>user(["K",sel,-30]);
+$("bCrash").onclick=()=>{for(let k=0;k<10&&!halted;k++){acts.push([tick,"K",sel,-4]);act(["K",sel,-4],true)}$("msg").textContent="Ten 4% drops in a row on "+MK[sel][0]+". Check the tape for margin calls.";render()};
+async function fees(){
+  try{const r=await hl({type:"referral",user:BUILDER}),s=await hl({type:"clearinghouseState",user:BUILDER});
+    builderLive=parseFloat(s.marginSummary.accountValue)>=100;$("cF").textContent="$"+fmt(parseFloat(r.builderRewards)||0)}catch(e){}
+}
+async function coin(){
+  try{const j=await getJSON("https://lite-api.jup.ag/tokens/v2/search?query=Ho7iohoM6UN96yoxzBNzz9aXZpNW3AyUVuEmBdAQpump"),t=j.find(x=>x.id==="Ho7iohoM6UN96yoxzBNzz9aXZpNW3AyUVuEmBdAQpump");if(!t)throw 0;
+    const big=v=>v>=1e6?"$"+fmt(v/1e6)+"M":v>=1e3?"$"+fmt(v/1e3,1)+"K":"$"+fmt(v,0);
+    $("cPx").textContent=t.usdPrice>0?"$"+t.usdPrice.toPrecision(3):"n/a";$("cMc").textContent=t.mcap>0?big(t.mcap):"n/a";
+    $("cH").textContent=t.holderCount>=0?fmt(t.holderCount,0):"n/a";$("cL").textContent=t.liquidity>0?big(t.liquidity):"n/a";
+    $("cNote").textContent="Live from Jupiter, updated "+new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})+". Not a price forecast."}
+  catch(e){if($("cPx").textContent==="loading"){["cPx","cMc","cH","cL"].forEach(k=>$(k).textContent="n/a");$("cNote").textContent="Coin data could not be reached from this page."}}
+}
+$("bCa").onclick=async()=>{const t=$("ca").textContent;try{await navigator.clipboard.writeText(t);$("bCa").textContent="Copied"}catch(e){const r=document.createRange();r.selectNodeContents($("ca"));const x=getSelection();x.removeAllRanges();x.addRange(r)}};
+$("bPause").onclick=()=>{paused=!paused;$("bPause").textContent=paused?"Resume":"Pause"};
+$("bReset").onclick=()=>{try{history.replaceState(null,"",location.pathname+location.search)}catch(e){}boot(Math.floor(Math.random()*2**31))};
+$("bShare").onclick=async()=>{const h=shareHash();try{location.hash=h}catch(e){}const url=location.href.split("#")[0]+"#"+h;
+  try{await navigator.clipboard.writeText(url);$("msg").textContent="Replay link copied. It replays this exact session."}catch(e){$("msg").textContent="Could not copy. The replay link is now in the address bar."}};
+async function getJSON(u){const c=new AbortController(),t=setTimeout(()=>c.abort(),5000);try{const r=await fetch(u,{signal:c.signal});if(!r.ok)throw new Error("HTTP "+r.status);return await r.json()}finally{clearTimeout(t)}}
+async function hl(body){const c=new AbortController(),t=setTimeout(()=>c.abort(),6000);try{const r=await fetch(HL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body),signal:c.signal});if(!r.ok)throw new Error("HTTP "+r.status);return await r.json()}finally{clearTimeout(t)}}
+async function pullPrices(){
+  const v=latest?latest.slice():MK.map(()=>0);
+  await Promise.allSettled(["","xyz"].map(dex=>hl(dex?{type:"metaAndAssetCtxs",dex}:{type:"metaAndAssetCtxs"}).then(m=>{
+    MK.forEach((k,i)=>{if(k[2]!==dex)return;const j=m[0].universe.findIndex(x=>x.name===k[3]);if(j<0)return;const c=m[1][j],p=parseFloat(c.markPx);
+      if(p>0){v[i]=Math.round(p*U);info[i]={funding:parseFloat(c.funding),vol:parseFloat(c.dayNtlVlm),prev:parseFloat(c.prevDayPx),maxLev:m[0].universe[j].maxLeverage}}})})));
+  if(!v.every(Boolean))throw new Error("missing price");
+  latest=v;lastOk=Date.now()
+}
+async function pullCandles(i){
+  if(!live||Date.now()-realAt[i]<20000)return;realAt[i]=Date.now();
+  try{const now=Date.now(),j=await hl({type:"candleSnapshot",req:{coin:MK[i][3],interval:"1m",startTime:now-80*60000,endTime:now}});
+    if(Array.isArray(j)&&j.length){realC[i]=j.slice(-80).map(x=>({o:Math.round(x.o*U),h:Math.round(x.h*U),l:Math.round(x.l*U),c:Math.round(x.c*U)}));if(i===sel)draw()}}catch(e){}
+}
+async function goLive(){
+  try{await pullPrices();live=true;
+    clearInterval(poll);poll=setInterval(()=>{pullPrices().catch(()=>{})},3000);return true}
+  catch(e){live=false;return false}
+}
+$("bMode").onclick=async()=>{
+  if(live){live=false;clearInterval(poll);boot(Math.floor(Math.random()*2**31));return}
+  $("msg").textContent="Connecting to live prices...";
+  if(await goLive())boot(Math.floor(Math.random()*2**31));
+  else{$("pmode").textContent="simulated prices";$("msg").textContent="Live prices could not be reached from this page, so prices stay simulated."}
+};
+(async()=>{
+  const bin=Uint8Array.from(atob(WASM_B64),c=>c.charCodeAt(0));
+  w=(await WebAssembly.instantiate(bin,{})).instance.exports;
+  const r=readHash();if(!r)await goLive();
+  boot(r?r.seed:Math.floor(Math.random()*2**31),r);
+  if(!r&&!live)$("msg").textContent="Live prices could not be reached from this page, so prices are simulated. You start with $10,000 of paper money.";
+  coin();fees();setInterval(()=>{if(!document.hidden){coin();fees()}},30000);
+  if(REAL_ON){$("modeSeg").hidden=false;setInterval(()=>{if(!document.hidden)refreshReal()},4000)}
+  timer=setInterval(()=>{if(paused||halted||document.hidden)return;if(live&&Date.now()-lastOk>15000){$("pmode").textContent="live prices stalled";return}if(live)$("pmode").textContent="live prices";step();render()},900);
+})().catch(e=>{$("msg").textContent="The engine failed to load in this browser: "+e.message});
+</script>

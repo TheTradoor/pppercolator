@@ -1,0 +1,670 @@
+//! Spec requirement #14 (rounding residue): every conservative-rounding
+//! residue is either assigned AGAINST the user (direction properties below)
+//! or stays in its source pool (sum-conservation, covered by the close/
+//! sequence conservation fuzz and the exact-split Kani proofs). This file
+//! pins the DIRECTION of every remaining division-bearing computational
+//! helper: floors never overstate user entitlements, ceils never understate
+//! user obligations.
+
+use percolator::v16::*;
+use percolator::SourceCreditStateV16;
+use percolator::{
+    ADL_ONE, BOUND_SCALE, CREDIT_RATE_SCALE, MAX_POSITION_ABS_Q, MIN_A_SIDE, POS_SCALE,
+};
+use proptest::prelude::*;
+
+#[test]
+fn margin_requirement_partition_regression() {
+    let aggregate = kani_margin_requirement(52_470, 500, 1).unwrap();
+    let partitioned = kani_margin_requirement(26_235, 500, 1)
+        .unwrap()
+        .checked_mul(2)
+        .unwrap();
+
+    assert_eq!(aggregate, 2_624);
+    assert_eq!(partitioned, aggregate);
+}
+
+#[test]
+fn source_support_rounds_each_domain_before_aggregation() {
+    let state = SourceCreditStateV16 {
+        positive_claim_bound_num: BOUND_SCALE,
+        exact_positive_claim_num: BOUND_SCALE,
+        fresh_reserved_backing_num: BOUND_SCALE,
+        credit_rate_num: CREDIT_RATE_SCALE / 2,
+        ..SourceCreditStateV16::EMPTY
+    };
+    let per_domain =
+        kani_source_credit_state_realizable_support_for_claim_num(state, BOUND_SCALE).unwrap();
+
+    assert_eq!(per_domain, 0);
+    assert_eq!(per_domain.checked_add(per_domain), Some(0));
+    assert_eq!(
+        (BOUND_SCALE / 2).checked_add(BOUND_SCALE / 2).unwrap() / BOUND_SCALE,
+        1,
+        "aggregating fractional domain credit first would invent one unusable atom"
+    );
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(2000))]
+
+    /// Trade fees CEIL: fee dust is charged against the user (spec #14
+    /// "assigned against the user conservatively") and never exceeds the
+    /// exact fee by more than one atom.
+    #[test]
+    fn fee_bps_ceils_against_user(
+        notional in 0u128..=u128::MAX / 20_000,
+        bps in 0u64..=10_000u64,
+    ) {
+        let fee = kani_checked_fee_bps(notional, bps).unwrap();
+        prop_assert!(fee * 10_000 >= notional * bps as u128, "fee under exact: dust leaked to user");
+        prop_assert!(fee == 0 || (fee - 1) * 10_000 < notional * bps as u128, "fee more than one atom over exact");
+    }
+
+    /// Trade notional floors: risk notional used for fees floors down,
+    /// while the margin-side notional ceils up — checked against each other
+    /// the user can never gain from the spread.
+    #[test]
+    fn notional_floor_le_ceil(
+        size_q in 1u128..=100_000_000_000u128,
+        price in 1u64..=1_000_000u64,
+    ) {
+        let floor = kani_trade_notional_floor(size_q, price).unwrap();
+        let ceil = kani_risk_notional_ceil(size_q, price).unwrap();
+        prop_assert!(floor <= ceil, "floor exceeded ceil");
+        // exact value sits between them
+        let exact_num = size_q as u128 * price as u128;
+        prop_assert!(floor * POS_SCALE <= exact_num);
+        prop_assert!(ceil * POS_SCALE + POS_SCALE > exact_num);
+    }
+
+    /// Margin requirement is exactly ceil(n*bps/10^4).max(min_floor), so a
+    /// portfolio never receives fractional-atom collateral credit.
+    #[test]
+    fn margin_requirement_is_exact_ceiled_with_min(
+        notional in 0u128..=u128::MAX / 20_000,
+        bps in 0u64..=10_000u64,
+        min_req in 0u128..=1_000_000u128,
+    ) {
+        let req = kani_margin_requirement(notional, bps, min_req).unwrap();
+        if notional == 0 {
+            prop_assert_eq!(req, 0);
+        } else {
+            let product = notional * bps as u128;
+            let expected = (product / 10_000 + u128::from(product % 10_000 != 0)).max(min_req);
+            prop_assert_eq!(req, expected);
+        }
+    }
+
+    /// Splitting one risk notional across two portfolios cannot lower the
+    /// aggregate requirement. This is the arithmetic property needed by the
+    /// public split/merge invariant; the former per-portfolio floor violated it.
+    #[test]
+    fn margin_requirement_is_conservative_under_partition(
+        first in 0u128..=u128::MAX / 40_000,
+        second in 0u128..=u128::MAX / 40_000,
+        bps in 0u64..=10_000u64,
+        min_req in 0u128..=1_000_000u128,
+    ) {
+        let aggregate = kani_margin_requirement(first + second, bps, min_req).unwrap();
+        let partitioned = kani_margin_requirement(first, bps, min_req)
+            .unwrap()
+            .checked_add(kani_margin_requirement(second, bps, min_req).unwrap())
+            .unwrap();
+        prop_assert!(
+            partitioned >= aggregate,
+            "partitioned requirement {partitioned} fell below aggregate {aggregate}"
+        );
+    }
+
+    /// ADL scaling: the scaled delta never exceeds the unscaled basis delta
+    /// in magnitude — social-loss chunking can only round toward zero.
+    #[test]
+    fn adl_delta_rounds_toward_zero(
+        abs_basis_q in 0u128..=1u128 << 100,
+        a_basis in 0u128..=1u128 << 100,
+        then in -(1i128 << 100)..=(1i128 << 100),
+        now in -(1i128 << 100)..=(1i128 << 100),
+    ) {
+        if let Some(scaled) = kani_scaled_adl_delta_fast(abs_basis_q, a_basis, then, now) {
+            if a_basis > 0 && abs_basis_q <= a_basis {
+                let raw = now.saturating_sub(then);
+                prop_assert!(scaled.unsigned_abs() <= raw.unsigned_abs(),
+                    "scaled ADL delta exceeded raw delta magnitude");
+            }
+        }
+    }
+
+    /// Source-credit support for a face claim floors: the realizable support
+    /// never exceeds the exact rate-scaled claim (haircut rounds against the
+    /// claimant, residue stays in the pool).
+    #[test]
+    fn realizable_support_floors_against_claimant(
+        claim_bound_num in 0u128..=1u128 << 90,
+        exact_frac in 0u128..=1000u128,
+        fresh_reserved in 0u128..=1u128 << 90,
+        face_num in 0u128..=1u128 << 90,
+    ) {
+        let exact_claim_num = claim_bound_num / 1000 * exact_frac;
+        let state = SourceCreditStateV16 {
+            positive_claim_bound_num: claim_bound_num,
+            exact_positive_claim_num: exact_claim_num,
+            fresh_reserved_backing_num: fresh_reserved,
+            credit_rate_num: 0, // recomputed below
+            ..SourceCreditStateV16::EMPTY
+        };
+        let rate = match kani_expected_source_credit_rate_num_for_state(state) {
+            Ok(r) => r,
+            Err(_) => return Ok(()),
+        };
+        let state = SourceCreditStateV16 { credit_rate_num: rate, ..state };
+        if let Ok(support) = kani_source_credit_state_realizable_support_for_face(state, face_num) {
+            // support <= exact face * rate / CRS (floor direction)
+            // (compare in u256-free form: support * CRS <= face * rate, guarded sizes)
+            let lhs = support.checked_mul(CREDIT_RATE_SCALE);
+            let rhs = face_num.checked_mul(rate);
+            if let (Some(l), Some(r)) = (lhs, rhs) {
+                prop_assert!(l <= r, "support exceeded exact rate-scaled face");
+            }
+        }
+    }
+}
+
+#[test]
+fn adl_effective_quantity_roundtrip_boundary_partition() {
+    let raw_values = [
+        0,
+        1,
+        POS_SCALE - 1,
+        POS_SCALE,
+        POS_SCALE + 1,
+        MAX_POSITION_ABS_Q - 1,
+        MAX_POSITION_ABS_Q,
+    ];
+    let a_basis_values = [
+        MIN_A_SIDE,
+        MIN_A_SIDE + 1,
+        ADL_ONE / 3,
+        ADL_ONE / 2,
+        ADL_ONE - 1,
+        ADL_ONE,
+    ];
+    let current_a_values = [
+        1,
+        MIN_A_SIDE - 1,
+        MIN_A_SIDE,
+        MIN_A_SIDE + 1,
+        ADL_ONE / 3,
+        ADL_ONE / 2,
+        ADL_ONE - 1,
+        ADL_ONE,
+    ];
+    for raw_abs_q in raw_values {
+        for a_basis in a_basis_values {
+            for current_a in current_a_values.into_iter().filter(|a| *a <= a_basis) {
+                let effective =
+                    kani_adl_effective_quantity_ceil(raw_abs_q, a_basis, current_a).unwrap();
+                let targets = [0, effective / 2, effective.saturating_sub(1)];
+                for target_effective in targets {
+                    if effective == 0 || target_effective >= effective {
+                        continue;
+                    }
+                    let target_raw = kani_raw_basis_for_adl_effective_quantity(
+                        target_effective,
+                        a_basis,
+                        current_a,
+                    )
+                    .unwrap();
+                    assert!(target_raw <= raw_abs_q);
+                    assert_eq!(
+                        kani_adl_effective_quantity_ceil(target_raw, a_basis, current_a),
+                        Ok(target_effective),
+                    );
+                }
+            }
+        }
+    }
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(20000))]
+
+    #[test]
+    fn adl_effective_quantity_roundtrip_preserves_any_reachable_reduction(
+        raw_abs_q in 0u128..=MAX_POSITION_ABS_Q,
+        a_basis in MIN_A_SIDE..=ADL_ONE,
+        current_selector in any::<u128>(),
+        target_selector in any::<u128>(),
+    ) {
+        let current_a = 1 + current_selector % a_basis;
+        let current_effective =
+            kani_adl_effective_quantity_ceil(raw_abs_q, a_basis, current_a).unwrap();
+        let target_effective = if current_effective == 0 {
+            0
+        } else {
+            target_selector % current_effective
+        };
+        let target_raw = kani_raw_basis_for_adl_effective_quantity(
+            target_effective,
+            a_basis,
+            current_a,
+        )
+        .unwrap();
+
+        prop_assert!(target_raw <= raw_abs_q);
+        prop_assert_eq!(
+            kani_adl_effective_quantity_ceil(target_raw, a_basis, current_a),
+            Ok(target_effective),
+        );
+    }
+}
+
+/// Spec #18 (deterministic credit rates), differential form: the engine's
+/// rate equals an INDEPENDENT reimplementation of the spec formula
+/// (min(floor(available * SCALE / claim_bound), SCALE); SCALE when unclaimed)
+/// computed here with u256-free big-int arithmetic, over random valid states.
+/// This is the strongest available artifact for the div-bearing rate core,
+/// which is excluded from Kani contracts by the documented toolchain pattern.
+#[cfg(test)]
+mod rate_differential {
+    use super::*;
+
+    fn spec_rate(
+        claim_bound: u128,
+        fresh_reserved: u128,
+        valid_liened: u128,
+        ins_reserved: u128,
+        ins_valid: u128,
+        ins_impaired: u128,
+    ) -> Option<u128> {
+        if claim_bound == 0 {
+            return Some(CREDIT_RATE_SCALE);
+        }
+        let available = fresh_reserved
+            .checked_sub(valid_liened)?
+            .checked_add(ins_reserved.checked_sub(ins_valid.checked_add(ins_impaired)?)?)?;
+        // independent widening: 128x128/128 via u128->BigUint-free f: use
+        // primitive split arithmetic (a*b/c with a,b < 2^128, c != 0) through
+        // u128 chunks — here bounded inputs keep a*b within u128 range.
+        let prod = available.checked_mul(CREDIT_RATE_SCALE)?;
+        Some(core::cmp::min(prod / claim_bound, CREDIT_RATE_SCALE))
+    }
+
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(4000))]
+
+        #[test]
+        fn engine_rate_matches_spec_formula(
+            claim_bound_atoms in 0u128..=1u128 << 40,
+            exact_frac in 0u128..=1000u128,
+            fresh_reserved_atoms in 0u128..=1u128 << 40,
+            liened_frac in 0u128..=1000u128,
+            ins_reserved_atoms in 0u128..=1u128 << 40,
+            ins_valid_frac in 0u128..=500u128,
+            ins_impaired_frac in 0u128..=500u128,
+        ) {
+            // atom-aligned BOUND_SCALE quantities, liens within reserves
+            let claim_bound = claim_bound_atoms * BOUND_SCALE;
+            let fresh_reserved = fresh_reserved_atoms * BOUND_SCALE;
+            let valid_liened = fresh_reserved / 1000 * liened_frac;
+            let ins_reserved = ins_reserved_atoms * BOUND_SCALE;
+            let ins_valid = ins_reserved / 1000 * ins_valid_frac;
+            let ins_impaired = ins_reserved / 1000 * ins_impaired_frac;
+            let exact = claim_bound / 1000 * exact_frac;
+            let state = SourceCreditStateV16 {
+                positive_claim_bound_num: claim_bound,
+                exact_positive_claim_num: exact,
+                fresh_reserved_backing_num: fresh_reserved,
+                valid_liened_backing_num: valid_liened,
+                insurance_credit_reserved_num: ins_reserved,
+                valid_liened_insurance_num: ins_valid,
+                impaired_liened_insurance_num: ins_impaired,
+                credit_rate_num: 0,
+                ..SourceCreditStateV16::EMPTY
+            };
+            let engine = kani_expected_source_credit_rate_num_for_state(state);
+            let spec = spec_rate(
+                claim_bound, fresh_reserved, valid_liened,
+                ins_reserved, ins_valid, ins_impaired,
+            );
+            match (engine, spec) {
+                (Ok(e), Some(s)) => prop_assert_eq!(e, s, "engine rate != spec formula"),
+                (Err(_), _) => {} // shape-invalid inputs may reject; never a wrong value
+                (Ok(e), None) => {
+                    // spec overflow path: engine must also be at most SCALE
+                    prop_assert!(e <= CREDIT_RATE_SCALE);
+                }
+            }
+        }
+    }
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(2000))]
+
+    /// Top-ups taken across up to four post-snapshot releases sum to one top-up at
+    /// the final rate, never exceed face, and a replay at the final rate pays zero.
+    /// The Kani version is
+    /// `proof_v16_resolved_split_topups_pay_exactly_one_topup_at_final_rate`.
+    #[test]
+    fn resolved_split_topups_pay_exactly_one_topup_at_final_rate(
+        face in 1u128..=1_000_000_000u128,
+        other in 0u128..=1_000_000_000u128,
+        residual in prop_oneof![1 => Just(0u128), 4 => 0u128..=2_000_000_000u128],
+        releases in proptest::collection::vec(0u128..=500_000_000u128, 1..=4),
+    ) {
+        let (mut ledger, mut legacy) =
+            MarketGroupV16ViewMut::<u64>::kani_kernel_credit_post_snapshot_residual(
+                ResolvedPayoutLedgerV16 {
+                    snapshot_residual: residual,
+                    terminal_claim_exact_receipts_num: face * BOUND_SCALE,
+                    terminal_claim_bound_unreceipted_num: other * BOUND_SCALE,
+                    snapshot_slot: 1,
+                    ..ResolvedPayoutLedgerV16::EMPTY
+                },
+                residual,
+                0,
+            )
+            .unwrap();
+        let untouched = ResolvedPayoutReceiptV16 {
+            present: true,
+            prior_bound_contribution_num: face * BOUND_SCALE,
+            live_released_face_at_receipt: 0,
+            terminal_positive_claim_face: face,
+            paid_effective: 0,
+            finalized: false,
+        };
+        let claimable = |receipt, ledger| {
+            MarketGroupV16ViewMut::<u64>::kani_resolved_receipt_claimable_against_ledger(
+                receipt, ledger,
+            )
+            .unwrap()
+        };
+        let first = claimable(untouched, ledger);
+        let mut receipt = kani_apply_resolved_payout_receipt_payment(untouched, first).unwrap();
+        let mut cumulative = first;
+        let mut pool = residual;
+        for released in releases {
+            pool += released;
+            (ledger, legacy) =
+                MarketGroupV16ViewMut::<u64>::kani_kernel_credit_post_snapshot_residual(
+                    ledger, legacy, released,
+                )
+                .unwrap();
+            let topup = claimable(receipt, ledger);
+            receipt = kani_apply_resolved_payout_receipt_payment(receipt, topup).unwrap();
+            cumulative += topup;
+            prop_assert!(cumulative <= face);
+        }
+        let single = claimable(untouched, ledger);
+        prop_assert_eq!(legacy, pool);
+        prop_assert_eq!(single, face * pool.min(face + other) / (face + other));
+        prop_assert_eq!(cumulative, single);
+        prop_assert_eq!(receipt.paid_effective, single);
+        prop_assert_eq!(receipt.finalized, single == face);
+        prop_assert_eq!(claimable(receipt, ledger), 0);
+    }
+}
+
+/// Spec #1 (support weight 1.0 is a constant, not an assumption): pinned at
+/// compile time — every Active asset's support weight is exactly 1.0.
+#[test]
+fn support_weight_is_constant_one() {
+    assert_eq!(
+        percolator::FULL_SUPPORT_WEIGHT,
+        percolator::SUPPORT_WEIGHT_SCALE
+    );
+}
+
+/// INV-085 / source-credit CU fix: the native-u128 fast path and its U256
+/// fallback must be exactly equivalent to the prior always-wide arithmetic.
+/// This uses full-width operands, so it exercises both the checked native
+/// branch and products that overflow u128 but fit in U256.
+mod source_credit_fast_path_differential {
+    use super::*;
+
+    fn floor_reference(a: u128, b: u128, denominator: u128) -> V16Result<u128> {
+        kani_mul_div_floor_u128_wide_reference(a, b, denominator)
+    }
+
+    fn ceil_reference(a: u128, b: u128, denominator: u128) -> V16Result<u128> {
+        kani_mul_div_ceil_u128_wide_reference(a, b, denominator)
+    }
+
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(8000))]
+
+        #[test]
+        fn fast_floor_and_ceil_equal_always_wide_reference(
+            a in any::<u128>(),
+            b in any::<u128>(),
+            denominator in any::<u128>(),
+        ) {
+            prop_assert_eq!(
+                kani_mul_div_floor_u128_or_wide(a, b, denominator),
+                floor_reference(a, b, denominator),
+            );
+            prop_assert_eq!(
+                kani_mul_div_ceil_u128_or_wide(a, b, denominator),
+                ceil_reference(a, b, denominator),
+            );
+        }
+
+        #[test]
+        fn fused_claim_burn_changes_only_claim_totals(
+            positive_claim_bound_num in any::<u128>(),
+            exact_raw in any::<u128>(),
+            burn_raw in any::<u128>(),
+            other in any::<[u128; 9]>(),
+            credit_epoch in any::<u64>(),
+        ) {
+            let exact_positive_claim_num = exact_raw.min(positive_claim_bound_num);
+            let face_burn_num = burn_raw.min(positive_claim_bound_num);
+            let source = SourceCreditStateV16 {
+                positive_claim_bound_num,
+                exact_positive_claim_num,
+                fresh_reserved_backing_num: other[0],
+                spent_backing_num: other[1],
+                provider_receivable_num: other[2],
+                valid_liened_backing_num: other[3],
+                impaired_liened_backing_num: other[4],
+                insurance_credit_reserved_num: other[5],
+                valid_liened_insurance_num: other[6],
+                impaired_liened_insurance_num: other[7],
+                credit_rate_num: other[8],
+                credit_epoch,
+            };
+            let mut expected = source;
+            expected.positive_claim_bound_num -= face_burn_num;
+            expected.exact_positive_claim_num -=
+                face_burn_num.min(expected.exact_positive_claim_num);
+
+            prop_assert_eq!(
+                kani_prepare_source_positive_claim_burn_delta(source, face_burn_num),
+                Ok(expected),
+            );
+        }
+
+        #[test]
+        fn fused_recompute_matches_two_step_legacy_epoch_and_rate(
+            positive_atoms in 0u128..=1u128 << 40,
+            exact_atoms_raw in 0u128..=1u128 << 40,
+            burn_atoms_raw in 0u128..=1u128 << 40,
+            backing_atoms in 0u128..=1u128 << 40,
+            credit_epoch in 0u64..=u64::MAX - 2,
+            risk_epoch in 0u64..=u64::MAX - 2,
+        ) {
+            let exact_atoms = exact_atoms_raw.min(positive_atoms);
+            let burn_atoms = burn_atoms_raw.min(positive_atoms);
+            let source = SourceCreditStateV16 {
+                positive_claim_bound_num: positive_atoms * BOUND_SCALE,
+                exact_positive_claim_num: exact_atoms * BOUND_SCALE,
+                fresh_reserved_backing_num: backing_atoms * BOUND_SCALE,
+                credit_rate_num: 17,
+                credit_epoch,
+                ..SourceCreditStateV16::EMPTY
+            };
+            let burn_num = burn_atoms * BOUND_SCALE;
+
+            let (legacy_before_burn, legacy_risk_epoch) =
+                kani_prepare_source_credit_domain_recompute_for_epoch(source, risk_epoch)
+                    .expect("bounded valid source must recompute");
+            let legacy_burned = kani_prepare_source_positive_claim_burn_delta(
+                legacy_before_burn,
+                burn_num,
+            )
+            .expect("bounded claim burn must fit");
+            let legacy = kani_prepare_source_credit_domain_recompute_for_epoch(
+                legacy_burned,
+                legacy_risk_epoch,
+            )
+            .expect("second bounded recompute must fit");
+
+            let fused_burned =
+                kani_prepare_source_positive_claim_burn_delta(source, burn_num)
+                    .expect("bounded fused claim burn must fit");
+            let fused = kani_prepare_source_credit_domain_recompute_for_epoch_steps(
+                fused_burned,
+                risk_epoch,
+                2,
+            )
+            .expect("two-step bounded recompute must fit");
+
+            prop_assert_eq!(fused, legacy);
+        }
+    }
+
+    #[test]
+    fn fast_mul_div_boundary_partition_matches_wide_reference() {
+        let values = [0, 1, 2, u128::MAX / 2, u128::MAX - 1, u128::MAX];
+        let denominators = [0, 1, 2, (1u128 << 127) - 1, 1u128 << 127, u128::MAX];
+        for a in values {
+            for b in values {
+                for denominator in denominators {
+                    assert_eq!(
+                        kani_mul_div_floor_u128_or_wide(a, b, denominator),
+                        floor_reference(a, b, denominator),
+                    );
+                    assert_eq!(
+                        kani_mul_div_ceil_u128_or_wide(a, b, denominator),
+                        ceil_reference(a, b, denominator),
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn fused_claim_burn_rejects_bound_underflow() {
+        let source = SourceCreditStateV16 {
+            positive_claim_bound_num: 7,
+            exact_positive_claim_num: 5,
+            ..SourceCreditStateV16::EMPTY
+        };
+        assert_eq!(
+            kani_prepare_source_positive_claim_burn_delta(source, 8),
+            Err(V16Error::CounterUnderflow),
+        );
+    }
+}
+
+/// DIVISION-AXIOM DISCHARGE (the narrow empirical obligation): the production
+/// wide-division helper loss_weight_for_basis EQUALS its specification axiom
+/// `q == ceil(abs * SOCIAL_WEIGHT_SCALE / a_basis)` over the full real input
+/// ranges and the rounding/edge boundaries. Kani proves the engine composition
+/// UNDER this axiom; this discharges `production == axiom` empirically.
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(20000))]
+
+    #[test]
+    fn loss_weight_helper_matches_division_axiom(
+        abs in 0u128..=100_000_000_000_000u128,         // [0, MAX_POSITION_ABS_Q]
+        a in 100_000_000_000_000u128..=1_000_000_000_000_000u128, // [MIN_A_SIDE, ADL_ONE]
+    ) {
+        let w = kani_loss_weight_for_basis(abs, a).expect("valid range never errors");
+        let num = abs as u128 * 1_000_000_000_000_000u128; // SOCIAL_WEIGHT_SCALE
+        // EXACT ceil axiom: smallest w with w*a >= num
+        prop_assert!(w as u128 * a >= num, "helper under-shoots the ceil bound");
+        prop_assert!(w == 0 || (w - 1) as u128 * a < num, "helper is not the minimal ceil");
+    }
+
+    /// edge boundaries: exact division, one-less, one-more, denominator extremes
+    #[test]
+    fn loss_weight_axiom_holds_at_rounding_edges(
+        k in 0u128..=1_000_000u128,
+        a in 100_000_000_000_000u128..=1_000_000_000_000_000u128,
+    ) {
+        // construct abs so that abs*S is near a multiple of a (rounding edges)
+        let s = 1_000_000_000_000_000u128;
+        for delta in [0i128, -1, 1] {
+            let target = k.saturating_mul(a);
+            let abs_num = (target as i128 + delta).max(0) as u128;
+            let abs = abs_num / s;
+            if abs > 100_000_000_000_000 { continue; }
+            let w = kani_loss_weight_for_basis(abs, a).unwrap();
+            let num = abs * s;
+            prop_assert!(w * a >= num);
+            prop_assert!(w == 0 || (w - 1) * a < num);
+        }
+    }
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(2000))]
+
+    /// The common resolved payout rate never pays more than the snapshot residual
+    /// or any face, and exact bounds leave under one atom of floor residue per
+    /// claimant. The Kani version is
+    /// `proof_v16_resolved_payout_rate_never_pays_more_than_snapshot_residual`.
+    #[test]
+    fn resolved_payout_rate_never_pays_more_than_snapshot_residual(
+        faces in proptest::collection::vec(0u128..=1_000_000_000u128, 1..=6),
+        receipted in 0usize..=6,
+        slack in prop_oneof![Just(0u128), 1u128..=1_000_000_000u128],
+        residual in 0u128..=10_000_000_000u128,
+    ) {
+        let receipted = receipted.min(faces.len());
+        let exact: u128 = faces[..receipted].iter().sum();
+        let unreceipted = faces[receipted..].iter().sum::<u128>() + slack;
+        let (ledger, _) = MarketGroupV16ViewMut::<u64>::kani_kernel_credit_post_snapshot_residual(
+            ResolvedPayoutLedgerV16 {
+                snapshot_residual: residual,
+                terminal_claim_exact_receipts_num: exact * BOUND_SCALE,
+                terminal_claim_bound_unreceipted_num: unreceipted * BOUND_SCALE,
+                snapshot_slot: 1,
+                ..ResolvedPayoutLedgerV16::EMPTY
+            },
+            residual,
+            0,
+        )
+        .unwrap();
+        let mut paid = 0u128;
+        for &face in &faces {
+            let gross =
+                MarketGroupV16ViewMut::<u64>::kani_resolved_receipt_claimable_against_ledger(
+                    ResolvedPayoutReceiptV16 {
+                        present: true,
+                        prior_bound_contribution_num: face * BOUND_SCALE,
+                        live_released_face_at_receipt: 0,
+                        terminal_positive_claim_face: face,
+                        paid_effective: 0,
+                        finalized: face == 0,
+                    },
+                    ledger,
+                )
+                .unwrap();
+            prop_assert!(gross <= face);
+            paid += gross;
+        }
+        let total_face: u128 = faces.iter().sum();
+        prop_assert!(paid <= residual);
+        if slack == 0 {
+            if residual >= total_face {
+                prop_assert_eq!(paid, total_face);
+            } else {
+                prop_assert!(residual - paid < faces.len() as u128);
+            }
+        }
+    }
+}

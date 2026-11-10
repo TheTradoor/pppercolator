@@ -1,0 +1,31 @@
+name: hl-bundle
+on:
+  push:
+    branches: [main]
+    paths: ["hl/**", ".github/workflows/hl-bundle.yml"]
+permissions:
+  contents: write
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install pinned dependencies
+        run: cd hl && if [ -f package-lock.json ]; then npm ci; else npm install; fi
+      - name: Bundle
+        run: |
+          cd hl
+          npx esbuild entry.js --bundle --format=iife --minify --target=es2022 --outfile=../dist/hl.js
+          sha256sum ../dist/hl.js | tee ../dist/hl.js.sha256
+          ls -la ../dist
+      - name: Commit bundle and lockfile
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f dist/hl.js dist/hl.js.sha256 hl/package-lock.json
+          git diff --cached --quiet || git commit -m "Build hl.js [skip ci]"
+          git pull -q --rebase origin main
+          git push

@@ -1,0 +1,795 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="apple-touch-icon" href="/logo.png"><meta property="og:type" content="website"><meta property="og:title" content="Pppercolator Launchpad"><meta property="og:description" content="A startup simulator on an old trading desk computer. Every company you launch is a real coin on Pump.fun tied to a real stock."><meta property="og:image" content="https://pppercolator-launchpad.netlify.app/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Pppercolator Launchpad"><meta name="twitter:description" content="A startup simulator on an old trading desk computer. Every company you launch is a real coin on Pump.fun tied to a real stock."><meta name="twitter:image" content="https://pppercolator-launchpad.netlify.app/og.png"><meta name="theme-color" content="#0A246A"><title>Pppercolator Launchpad</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="A startup simulator on an old trading desk computer where every company you launch is a real coin tied to a real stock.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Pixelify+Sans:wght@500;700&display=swap">
+<style>
+/* Layout: one screen. A sky blue 2000s desktop with icons at left, grey bevelled program windows on top, a taskbar pinned below. Hot pink is the only loud colour. */
+:root{
+  --desk:#3A6EA5; --desk-lo:#0A5E96; --pink:#E91E63; --pink-lo:#B3134A;
+  --face:#D4D0C8; --face-2:#F4F2EC; --hi:#FFFFFF; --sh:#808080; --dk:#404040;
+  --ink:#10151C; --dim:#4A5563; --paper:#FFFFFF; --title-a:#0A246A; --title-b:#A6CAF0;
+  --ui:Tahoma,Verdana,"Segoe UI",sans-serif;
+  --pix:"Pixelify Sans",Tahoma,sans-serif;
+  --term:"VT323","Courier New",monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--desk);color:var(--ink);font:13px/1.45 var(--ui);overflow:hidden;-webkit-font-smoothing:none}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:1px dotted var(--ink);outline-offset:-4px}
+.os{height:100%;display:flex;flex-direction:column;background-color:var(--desk);background-image:radial-gradient(rgba(255,255,255,.09) 1px,transparent 1px);background-size:4px 4px}
+.os::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:40;background:repeating-linear-gradient(0deg,rgba(0,0,0,.08) 0 1px,transparent 1px 3px);box-shadow:inset 0 0 110px rgba(0,0,0,.38)}
+.desktop{position:relative;flex:1;min-height:0;overflow:hidden;
+  padding:12px max(12px,env(safe-area-inset-right,0px)) 12px max(12px,env(safe-area-inset-left,0px))}
+
+/* bevels */
+.out{background:var(--face);border:1px solid;border-color:var(--hi) var(--dk) var(--dk) var(--hi);box-shadow:inset -1px -1px 0 var(--sh),inset 1px 1px 0 var(--face-2)}
+.in{background:var(--paper);border:1px solid;border-color:var(--sh) var(--hi) var(--hi) var(--sh);box-shadow:inset 1px 1px 0 var(--dk)}
+.btn{min-height:32px;padding:4px 14px;cursor:pointer;background:var(--face);border:1px solid;border-color:var(--hi) var(--dk) var(--dk) var(--hi);box-shadow:inset -1px -1px 0 var(--sh),inset 1px 1px 0 var(--face-2)}
+.btn:active,.btn[aria-pressed=true],.btn[aria-selected=true]{border-color:var(--dk) var(--hi) var(--hi) var(--dk);box-shadow:inset 1px 1px 0 var(--sh);padding:5px 13px 3px 15px}
+.btn.go{font-weight:bold;outline:1px solid #000;outline-offset:0}
+
+/* desktop icons */
+.icons{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;max-width:420px}
+.ico{display:grid;justify-items:center;gap:4px;padding:8px 2px;background:none;border:1px solid transparent;cursor:pointer;color:var(--hi);font:12px var(--ui);text-shadow:1px 1px 0 rgba(0,0,0,.55);text-align:center}
+.ico:hover,.ico:focus-visible{background:rgba(255,255,255,.16);border:1px dotted rgba(255,255,255,.7);outline:none}
+.ico svg{width:40px;height:40px;image-rendering:pixelated}
+@media(min-width:760px){.icons{grid-template-columns:none;grid-auto-flow:column;grid-template-rows:repeat(auto-fill,84px);grid-auto-columns:84px;height:100%;max-width:none;width:max-content;align-content:start}}
+
+/* windows */
+.win{position:absolute;inset:6px;display:flex;flex-direction:column;padding:3px;z-index:5}
+.win[hidden]{display:none!important}
+.tbar{display:flex;align-items:center;gap:8px;padding:4px 4px 4px 8px;background:linear-gradient(90deg,var(--title-a),var(--title-b));color:var(--hi);font-weight:bold;cursor:default;user-select:none;touch-action:none}
+.tbar span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.x{width:26px;height:24px;min-height:0;padding:0;font-weight:bold;line-height:1}
+.x:active{padding:0}
+.body{flex:1;min-height:0;overflow:auto;padding:12px;display:grid;gap:12px;align-content:start}
+.sbar{padding:3px 8px;font-size:12px;color:var(--dim);border-top:1px solid var(--hi);box-shadow:0 -1px 0 var(--sh)}
+@media(min-width:760px){
+  .win{inset:auto;width:min(560px,calc(100% - 130px));max-height:calc(100% - 24px)}
+  #w-launch{left:118px;top:18px}
+  #w-exchange{left:200px;top:60px;width:min(680px,calc(100% - 220px))}
+  #w-office{left:160px;top:90px;width:420px}
+  #w-manual{left:260px;top:40px}
+  #w-run{left:180px;top:120px;width:min(560px,calc(100% - 200px))}
+  #w-ai{left:240px;top:60px;width:min(480px,calc(100% - 260px))}
+  #w-lobby{left:150px;top:50px;width:min(540px,calc(100% - 170px))}
+  #w-rank{left:230px;top:70px;width:min(560px,calc(100% - 250px))}
+  #w-coin{left:300px;top:110px;width:440px}
+}
+
+@media(min-width:1180px){#w-lobby{left:690px;top:18px}}
+h2{font:700 20px/1.1 var(--pix);margin:0}
+p{margin:0}
+.lead{color:var(--dim)}
+label{display:block;font-weight:bold;margin-bottom:4px}
+input[type=text],select{width:100%;min-height:34px;padding:4px 8px;background:var(--paper);border:1px solid;border-color:var(--sh) var(--hi) var(--hi) var(--sh);box-shadow:inset 1px 1px 0 var(--dk)}
+.grid2{display:grid;gap:10px}
+@media(min-width:480px){.grid2{grid-template-columns:1fr 1fr}}
+.row{display:flex;flex-wrap:wrap;gap:6px}
+.card{display:flex;gap:12px;align-items:center;padding:12px;min-width:0}
+.face{flex:none;width:64px;height:64px;display:grid;place-items:center;overflow:hidden;background:var(--desk);border:2px solid var(--ink)}
+.card b{display:block;font:700 20px/1.1 var(--pix);overflow-wrap:anywhere}
+.card small{font:16px var(--term);color:var(--dim)}
+.tagp{display:inline-block;padding:1px 7px;background:var(--pink);color:var(--hi);font:15px var(--term)}
+#status{min-height:1.5em;color:var(--pink-lo);font-weight:bold}
+
+/* exchange */
+.tabs{display:flex;gap:4px;overflow-x:auto}
+.tabs .btn{flex:none;white-space:nowrap}
+.sheet{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font:17px var(--term);min-width:440px}
+th{position:sticky;top:0;text-align:left;font:bold 12px var(--ui);padding:5px 8px;background:var(--face);border-bottom:1px solid var(--sh)}
+td{padding:6px 8px;border-bottom:1px solid var(--face)}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.empty{padding:26px 12px;text-align:center;font:19px var(--term);color:var(--dim)}
+
+/* manual */
+.note{padding:12px;font:18px/1.35 var(--term);white-space:pre-wrap}
+ol,ul{margin:0;padding-left:20px;display:grid;gap:6px}
+
+.face img,.spr{width:100%;height:100%;display:block;object-fit:cover}
+.spr g{animation:bob .9s steps(1) infinite}
+.spr .ey{animation:blink 3.4s steps(1) infinite}
+@keyframes bob{50%{transform:translateY(-1px)}}
+@keyframes blink{0%,92%{opacity:1}93%,100%{opacity:0}}
+.fly{display:grid;gap:12px;padding:12px;align-items:center}
+@media(min-width:480px){.fly{grid-template-columns:120px 1fr}}
+.wheel{width:120px;height:120px;justify-self:center}
+.spin{transform-origin:60px 60px;animation:spin 8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.stats div{padding:8px;min-width:0}.stats small{display:block;color:var(--dim);font-size:11px}.stats b{font:20px var(--term);font-weight:normal}
+input[type=file]{width:100%;font-size:12px}
+
+.addr{display:flex;align-items:center;gap:6px;padding:4px 8px;font-size:12px;border-bottom:1px solid var(--sh)}
+.addr .in{flex:1;min-width:0;padding:2px 6px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.smenu{position:fixed;left:max(2px,env(safe-area-inset-left,0px));bottom:calc(42px + env(safe-area-inset-bottom,0px));z-index:45;display:flex;padding:3px}
+.sside{writing-mode:vertical-rl;transform:rotate(180deg);background:linear-gradient(0deg,var(--title-a),var(--title-b));color:#fff;font:700 18px var(--pix);padding:8px 4px;text-align:left}
+.slist{display:grid;min-width:190px}
+.slist button{background:none;border:0;text-align:left;padding:8px 14px;cursor:pointer;min-height:36px}
+.slist button:hover,.slist button:focus-visible{background:var(--title-a);color:#fff;outline:none}
+#msgbox{inset:auto;left:50%;top:38%;transform:translate(-50%,-50%);width:min(340px,calc(100% - 24px));max-height:none;z-index:60}
+.msgrow{display:flex;gap:12px;align-items:flex-start}
+.msgrow i{flex:none;width:32px;height:32px;border-radius:50%;background:#FFD23F;border:2px solid #000;display:grid;place-items:center;font:700 20px var(--pix);font-style:normal}
+
+.guide{position:fixed;right:max(8px,env(safe-area-inset-right,0px));bottom:calc(48px + env(safe-area-inset-bottom,0px));z-index:44;display:flex;flex-direction:column;align-items:flex-end;gap:6px;pointer-events:none}
+.guide>*{pointer-events:auto}
+.bubble{max-width:min(270px,72vw);padding:10px;background:#FFFFE1;color:#000;border:1px solid #000;box-shadow:2px 2px 0 rgba(0,0,0,.45)}
+.bubble b{display:block;font:700 14px var(--pix);margin-bottom:4px}
+.bubble p{margin:0 0 8px;min-height:3.2em}
+.gface{width:68px;height:68px;padding:4px;background:var(--desk);border:2px solid #000;cursor:pointer;box-shadow:2px 2px 0 rgba(0,0,0,.45)}
+
+/* taskbar */
+.task{display:flex;align-items:center;gap:6px;padding:4px max(6px,env(safe-area-inset-right,0px)) calc(4px + env(safe-area-inset-bottom,0px)) max(6px,env(safe-area-inset-left,0px));border-width:1px 0 0}
+.start{font:700 15px var(--pix);display:flex;align-items:center;gap:6px}
+.start i{width:12px;height:12px;background:var(--pink);display:inline-block}
+.tape{flex:1;min-width:0;overflow:hidden;white-space:nowrap;padding:5px 8px;font:17px var(--term);color:#0B3;background:var(--dk);border-color:var(--sh) var(--hi) var(--hi) var(--sh)}
+.tape span{display:inline-block;padding-left:100%;animation:tape 26s linear infinite}
+@keyframes tape{to{transform:translateX(-100%)}}
+.clock{padding:5px 10px;font:17px var(--term);white-space:nowrap}
+
+/* boot */
+.boot{position:fixed;inset:0;z-index:50;background:#000;color:#C8FFD8;font:20px/1.3 var(--term);padding:22px;display:grid;align-content:start;gap:2px;cursor:pointer}
+.boot b{color:var(--pink);font-weight:normal}
+.boot .skip{margin-top:14px;color:#7A8}
+@media(prefers-reduced-motion:reduce){.spr g,.spr .ey,.spin{animation:none}.tape span{animation:none;padding-left:0}}
+/* ---- time machine: the year picks the skin ---- */
+.tm{position:fixed;inset:0;z-index:48;background:rgba(0,0,0,.9);display:grid;place-items:center;overflow:auto;color:#C8FFD8;font:20px/1.25 "VT323","Courier New",monospace;padding:16px max(16px,env(safe-area-inset-right,0px)) 16px max(16px,env(safe-area-inset-left,0px))}
+.tmbox{width:min(760px,100%);display:grid;gap:14px}
+.tmh{font-size:40px;line-height:1;color:#fff;letter-spacing:.06em}
+.tmrow{display:grid;gap:10px}
+@media(min-width:700px){.tmrow{grid-template-columns:repeat(3,1fr)}}
+.tmrow button{display:grid;gap:6px;text-align:left;padding:16px;min-height:120px;cursor:pointer;font:inherit;color:#C8FFD8;background:#06120A;border:2px solid #2E7D4A}
+.tmrow button:hover,.tmrow button:focus-visible{background:#0C2414;border-color:#C8FFD8;outline:none}
+.tmrow b{font-size:54px;line-height:.9;font-weight:400;color:#fff}
+.tmrow button[data-era="1975"] b{color:#FFB000}.tmrow button[data-era="2009"] b{color:#7CC4FF}
+
+/* 1975: amber terminal */
+[data-era="1975"]{--desk:#0B0906;--face:#14100A;--face-2:#14100A;--hi:#A87400;--sh:#3A2A04;--dk:#A87400;--ink:#FFB000;--dim:#C08A10;--paper:#0B0906;--title-a:#FFB000;--title-b:#FFB000;--pink:#FFB000;--pink-lo:#FFB000;--ui:var(--term);--pix:var(--term)}
+[data-era="1975"] body{font-size:18px;line-height:1.2}
+[data-era="1975"] .tbar,[data-era="1975"] .sside,[data-era="1975"] .tagp,[data-era="1975"] .slist button:hover,[data-era="1975"] .slist button:focus-visible{color:#0B0906}
+[data-era="1975"] .btn.go{background:#FFB000;color:#0B0906;outline-color:#FFB000}
+[data-era="1975"] .btn[aria-pressed=true],[data-era="1975"] .btn[aria-selected=true]{background:#FFB000;color:#0B0906}
+[data-era="1975"] .tape{background:#0B0906;color:#FFB000}
+[data-era="1975"] .ico{color:#FFB000;text-shadow:none;font:16px var(--term)}
+[data-era="1975"] .bubble{background:#14100A;color:#FFB000;border-color:#FFB000}
+[data-era="1975"] .note,[data-era="1975"] table,[data-era="1975"] .empty{font-size:18px}
+[data-era="1975"] canvas,[data-era="1975"] .face,[data-era="1975"] .ico svg,[data-era="1975"] .gface,[data-era="1975"] .wheel,[data-era="1975"] .msgrow i{filter:grayscale(1) sepia(1) saturate(5) hue-rotate(-12deg) brightness(.95) contrast(1.1)}
+[data-era="1975"] canvas{filter:grayscale(1) sepia(1) saturate(5) hue-rotate(-12deg) brightness(.62) contrast(1.25)}
+[data-era="1975"] .win,[data-era="1975"] .bubble,[data-era="1975"] .tape{text-shadow:0 0 6px rgba(255,176,0,.35)}
+
+/* 1993: flat grey desktop */
+[data-era="1993"]{--desk:#577C7B;--face:#C0C0C0;--face-2:#DFDFDF;--sh:#808080;--dk:#000000;--title-a:#000080;--title-b:#000080}
+[data-era="1993"] .win{border:2px solid #000;box-shadow:none}
+[data-era="1993"] .body{background:#fff}
+[data-era="1993"] .os::after{box-shadow:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.05) 0 1px,transparent 1px 3px)}
+
+/* 2009: glossy glass */
+[data-era="2009"]{--desk:#1B5FA8;--face:#EEF2F7;--face-2:#FFFFFF;--hi:#FFFFFF;--sh:#B8C4D4;--dk:#7E8CA0;--ink:#1B2430;--dim:#5A6778;--paper:#FFFFFF;--title-a:#1456B8;--title-b:#7CC4FF;--ui:"Segoe UI",Tahoma,Verdana,sans-serif;--pix:"Segoe UI",Tahoma,Verdana,sans-serif}
+[data-era="2009"] body{-webkit-font-smoothing:antialiased}
+[data-era="2009"] .os{background:radial-gradient(70% 60% at 80% 100%,rgba(124,196,255,.75),transparent 70%),radial-gradient(60% 50% at 10% 0%,rgba(255,255,255,.35),transparent 70%),linear-gradient(160deg,#0E3F86,#1B7FD0 55%,#0A2E66)}
+[data-era="2009"] .os::after{display:none}
+[data-era="2009"] .win{border-radius:10px;background:rgba(255,255,255,.32);border:1px solid rgba(255,255,255,.75);box-shadow:0 14px 44px rgba(0,0,0,.5);padding:6px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+[data-era="2009"] .tbar{background:transparent;color:#0B1B33;text-shadow:0 0 10px #fff,0 0 10px #fff}
+[data-era="2009"] .body{background:var(--face);border:1px solid rgba(0,0,0,.28);border-radius:6px}
+[data-era="2009"] .sbar,[data-era="2009"] .addr{border:0;box-shadow:none;color:#0B1B33}
+[data-era="2009"] .btn{border-radius:4px;border:1px solid #8E9CB0;background:linear-gradient(#FDFEFF,#DCE4EE);box-shadow:none}
+[data-era="2009"] .btn[aria-pressed=true],[data-era="2009"] .btn[aria-selected=true]{background:linear-gradient(#CFE6FF,#9CCBFF);border-color:#3C7FD0}
+[data-era="2009"] .btn.go{background:linear-gradient(#5DB0F5,#1F6FD0);color:#fff;border-color:#1556A8;outline:0}
+[data-era="2009"] .x{background:linear-gradient(#F08A7E,#C9302C);color:#fff;border-color:#8E1F1B}
+[data-era="2009"] .in,[data-era="2009"] input[type=text],[data-era="2009"] select{border:1px solid #AEB9C8;box-shadow:none;border-radius:4px}
+[data-era="2009"] .task{background:linear-gradient(rgba(40,60,90,.78),rgba(10,20,40,.88));border:0;box-shadow:none;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+[data-era="2009"] .start{border-radius:999px;color:#fff;background:radial-gradient(circle at 40% 30%,#7CC4FF,#1456B8);border:1px solid #9CCBFF;box-shadow:none}
+[data-era="2009"] .start i{background:#fff;border-radius:50%}
+[data-era="2009"] .tape{background:rgba(0,0,0,.35);color:#BFE3FF;border:0;box-shadow:none;font:14px var(--ui)}
+[data-era="2009"] .clock{background:transparent;color:#fff;border:0;box-shadow:none;font:14px var(--ui)}
+[data-era="2009"] .smenu{border-radius:10px;background:rgba(255,255,255,.9);border:1px solid rgba(255,255,255,.8);box-shadow:0 14px 44px rgba(0,0,0,.5)}
+[data-era="2009"] .bubble{background:#fff;border:1px solid #8E9CB0;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+[data-era="2009"] .gface{border-radius:14px;border:1px solid rgba(255,255,255,.8);box-shadow:0 8px 24px rgba(0,0,0,.35)}
+[data-era="2009"] .tagp{border-radius:4px;font:600 12px var(--ui);padding:2px 8px}
+[data-era="2009"] h2{font-weight:600}
+[data-era="2009"] .face{border-radius:10px;border:1px solid rgba(0,0,0,.3)}
+
+/* ---- era layouts: each year rearranges the whole screen, not just the colours ---- */
+.pmh{display:none}
+/* 1975: one full-screen terminal, programs on function keys */
+[data-era="1975"]{--fk:102px}
+@media(min-width:760px){[data-era="1975"]{--fk:38px}}
+[data-era="1975"] .desktop{padding:0}
+[data-era="1975"] .desktop::before{content:"PPPERCOLATOR TERMINAL   1975\A\A NO PROGRAM RUNNING.\A PRESS A FUNCTION KEY.";white-space:pre-wrap;display:block;padding:18px;font:22px/1.3 var(--term);color:#FFB000;text-shadow:0 0 6px rgba(255,176,0,.35)}
+[data-era="1975"] .desktop>.win{inset:0 0 var(--fk) 0!important;left:0!important;top:0!important;right:0!important;bottom:var(--fk)!important;width:auto!important;max-height:none!important;padding:0;border:0;box-shadow:none;background:#0B0906}
+[data-era="1975"] .tbar{background:#FFB000;padding:2px 8px;font-weight:normal;text-transform:uppercase;letter-spacing:.06em}
+[data-era="1975"] .x{width:auto;height:auto;font-size:0;border:0;box-shadow:none;background:none;color:#0B0906;padding:0 4px}
+[data-era="1975"] .x::after{content:"[ESC]";font:18px var(--term)}
+[data-era="1975"] .btn{border:1px solid #FFB000;box-shadow:none}
+[data-era="1975"] .in,[data-era="1975"] input[type=text],[data-era="1975"] select{border:1px solid #6B4A00;box-shadow:none}
+[data-era="1975"] .sbar{border-top:1px dashed #6B4A00;box-shadow:none;font-size:16px}
+[data-era="1975"] .icons{position:absolute;left:0;right:0;bottom:0;height:var(--fk);width:auto;max-width:none;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:none;grid-auto-flow:row;grid-auto-columns:auto;gap:0;align-content:stretch;counter-reset:fk;background:#0B0906;border-top:1px solid #FFB000}
+@media(min-width:760px){[data-era="1975"] .icons{grid-template-columns:repeat(9,1fr)}}
+[data-era="1975"] .ico{counter-increment:fk;display:block;padding:4px 4px;min-height:32px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border:0;text-transform:uppercase}
+[data-era="1975"] .ico svg{display:none}
+[data-era="1975"] .ico::before{content:"F" counter(fk);background:#FFB000;color:#0B0906;padding:0 4px;margin-right:6px;text-shadow:none}
+[data-era="1975"] .ico:hover,[data-era="1975"] .ico:focus-visible{background:#3A2A04;border:0}
+[data-era="1975"] .task{order:-1;border:0;border-bottom:1px solid #FFB000;box-shadow:none;background:#0B0906;padding-top:calc(4px + env(safe-area-inset-top,0px));padding-bottom:4px}
+[data-era="1975"] .start{font-size:0;border:1px solid #FFB000;box-shadow:none;background:none;gap:0}
+[data-era="1975"] .start i{display:none}
+[data-era="1975"] .start::after{content:"MENU";font:18px var(--term);color:#FFB000}
+[data-era="1975"] .tape,[data-era="1975"] .clock{border:0;box-shadow:none}
+[data-era="1975"] .smenu{top:calc(46px + env(safe-area-inset-top,0px));bottom:auto;border:1px solid #FFB000;box-shadow:none}
+[data-era="1975"] .guide{bottom:calc(var(--fk) + 8px + env(safe-area-inset-bottom,0px))}
+
+/* 1993: no taskbar, no Start. A Program Manager window holds the program icons. */
+[data-era="1993"] .task{padding:0;border:0;box-shadow:none;background:#000}
+[data-era="1993"] .start,[data-era="1993"] .clock{display:none}
+[data-era="1993"] .tape{border:0;box-shadow:none;padding:3px 8px calc(3px + env(safe-area-inset-bottom,0px))}
+[data-era="1993"] .icons{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:none;grid-auto-flow:row;grid-auto-columns:auto;gap:2px;width:auto;height:auto;max-width:400px;align-content:start;background:#fff;border:2px solid #000;outline:3px solid #C0C0C0;outline-offset:-5px;padding:5px 5px 12px}
+@media(min-width:760px){[data-era="1993"] .icons{width:372px}
+  [data-era="1993"] .desktop>.win{width:min(560px,calc(100% - 420px))}
+  [data-era="1993"] #w-launch{left:400px;top:14px}[data-era="1993"] #w-lobby{left:470px;top:56px}[data-era="1993"] #w-exchange{left:430px;top:40px}[data-era="1993"] #w-office{left:450px;top:80px}[data-era="1993"] #w-manual{left:440px;top:30px}[data-era="1993"] #w-run{left:420px;top:90px}[data-era="1993"] #w-ai{left:460px;top:50px}[data-era="1993"] #w-rank{left:430px;top:60px}[data-era="1993"] #w-coin{left:450px;top:70px}}
+[data-era="1993"] .pmh{display:block;grid-column:1/-1;margin-bottom:8px}
+.pmt{background:#000080;color:#fff;font-weight:bold;text-align:center;padding:3px 6px;border-bottom:1px solid #000}
+.pmm{display:flex;flex-wrap:wrap;gap:0;border-bottom:1px solid #000;background:#fff}
+.pmm button{background:none;border:0;padding:4px 9px;min-height:28px;cursor:pointer;color:#000}
+.pmm button::first-letter{text-decoration:underline}
+.pmm button:hover,.pmm button:focus-visible{background:#000080;color:#fff;outline:none}
+[data-era="1993"] .ico{color:#000;text-shadow:none;padding:8px 2px}
+[data-era="1993"] .ico svg{background:#C0C0C0;border:1px solid #000;padding:3px;width:44px;height:44px}
+[data-era="1993"] .ico:hover,[data-era="1993"] .ico:focus-visible{background:none;border-color:transparent;color:#fff}
+[data-era="1993"] .ico:hover,[data-era="1993"] .ico:focus-visible{text-decoration:none;box-shadow:inset 0 -18px 0 #000080}
+[data-era="1993"] .tbar{background:#000080;justify-content:center;text-align:center;padding:2px;border-bottom:1px solid #000}
+[data-era="1993"] .x{order:-1;font-size:0;width:24px;height:22px;border:0;border-right:1px solid #000;border-radius:0;box-shadow:none;background:#C0C0C0;position:relative}
+[data-era="1993"] .x::after{content:"";position:absolute;left:4px;right:4px;top:9px;height:4px;background:#fff;border:1px solid #000;box-shadow:1px 1px 0 #808080}
+[data-era="1993"] .btn{border:1px solid #000;border-radius:3px;box-shadow:inset 1px 1px 0 #fff,inset -2px -2px 0 #808080}
+[data-era="1993"] .btn.go{border-width:2px;outline:0}
+[data-era="1993"] .btn:active,[data-era="1993"] .btn[aria-pressed=true],[data-era="1993"] .btn[aria-selected=true]{box-shadow:inset 2px 2px 0 #808080}
+[data-era="1993"] .guide{bottom:calc(34px + env(safe-area-inset-bottom,0px))}
+
+/* 2009: glass taskbar with a round orb and pinned program icons, ticker as a desktop gadget */
+[data-era="2009"] .task{min-height:calc(48px + env(safe-area-inset-bottom,0px));padding-left:max(6px,env(safe-area-inset-left,0px))}
+[data-era="2009"] .start{font-size:0;width:40px;height:40px;min-height:40px;padding:0;justify-content:center;gap:0;flex:none}
+[data-era="2009"] .start i{width:16px;height:16px;border-radius:3px;background:#fff;border-radius:50%;box-shadow:0 0 0 3px #E91E63}
+[data-era="2009"] .clock{margin-left:auto}
+[data-era="2009"] .tape{display:none}
+[data-era="2009"] .icons{position:fixed;z-index:43;left:calc(52px + env(safe-area-inset-left,0px));bottom:calc(4px + env(safe-area-inset-bottom,0px));display:flex;gap:2px;width:auto;height:auto;max-width:none}
+[data-era="2009"] .ico{font-size:0;gap:0;width:32px;height:40px;padding:0;place-content:center;border-radius:4px;border:1px solid transparent}
+[data-era="2009"] .ico svg{width:26px;height:26px}
+[data-era="2009"] .ico:hover,[data-era="2009"] .ico:focus-visible{background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.55)}
+[data-era="2009"] .smenu{bottom:calc(54px + env(safe-area-inset-bottom,0px))}
+[data-era="2009"] .guide{bottom:calc(58px + env(safe-area-inset-bottom,0px))}
+@media(max-width:479px){[data-era="2009"] .clock{display:none}}
+@media(min-width:760px){
+  [data-era="2009"] .ico{width:46px}
+  [data-era="2009"] .ico svg{width:30px;height:30px}
+  [data-era="2009"] .tape{display:block;margin-left:440px;border-radius:6px;background:rgba(0,0,0,.35);padding:6px 10px}
+}
+</style></head><body>
+
+<div class="tm" id="tm" hidden>
+  <div class="tmbox">
+    <div class="tmh">TIME MACHINE</div>
+    <div>Pick the year you want to trade in. The whole desk changes with it. You can jump again from the Start menu.</div>
+    <div class="tmrow">
+      <button type="button" data-era="1975"><b>1975</b><span>Amber terminals. Fixed broker commissions have just ended.</span></button>
+      <button type="button" data-era="1993"><b>1993</b><span>Grey desktops and floppy disks. The web is going public.</span></button>
+      <button type="button" data-era="2009"><b>2009</b><span>Glossy glass windows. The first Bitcoin block is mined.</span></button>
+    </div>
+  </div>
+</div>
+<div class="boot" id="boot" role="button" tabindex="0" aria-label="Start Pppercolator Launchpad">
+  <div>PPPERCOLATOR BIOS v1.0 &nbsp; (C) 2000</div>
+  <div>Memory test ........ 64MB OK</div>
+  <div>Dialing 555-2000 ... 56,000 bps OK</div>
+  <div>Year set to 2000. Repeating history ...</div>
+  <div>Loading <b>PPPERCOLATOR</b> ...</div>
+  <div class="skip">Tap to start</div>
+</div>
+
+<div class="os">
+  <main class="desktop" id="desktop">
+    <div class="icons">
+      <div class="pmh"><div class="pmt">Program Manager</div><div class="pmm"><button type="button" id="pmTime">Time Machine</button><button type="button" data-open="w-coin">PPP Coin</button><button type="button" data-open="w-manual">Help</button></div></div>
+      <button class="ico" data-open="w-launch"><svg viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="2" y="5" width="12" height="9" fill="#fff"/><rect x="2" y="5" width="12" height="2" fill="#E91E63"/><rect x="6" y="2" width="4" height="3" fill="#fff"/><rect x="4" y="9" width="2" height="3" fill="#0A3B8C"/><rect x="7" y="9" width="2" height="3" fill="#0A3B8C"/><rect x="10" y="9" width="2" height="3" fill="#0A3B8C"/></svg>Start a Company</button>
+      <button class="ico" data-open="w-exchange"><svg viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="1" y="2" width="14" height="11" fill="#1B2530"/><rect x="3" y="9" width="2" height="2" fill="#0B3"/><rect x="6" y="7" width="2" height="4" fill="#0B3"/><rect x="9" y="5" width="2" height="6" fill="#0B3"/><rect x="12" y="4" width="1" height="7" fill="#E91E63"/><rect x="5" y="13" width="6" height="1" fill="#fff"/></svg>Exchange</button>
+      <button class="ico" data-open="w-office"><svg viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="3" y="2" width="10" height="12" fill="#fff"/><rect x="5" y="4" width="2" height="2" fill="#0083CB"/><rect x="9" y="4" width="2" height="2" fill="#0083CB"/><rect x="5" y="8" width="2" height="2" fill="#0083CB"/><rect x="9" y="8" width="2" height="2" fill="#0083CB"/><rect x="7" y="11" width="2" height="3" fill="#E91E63"/></svg>My Office</button>
+      <button class="ico" data-open="w-manual"><svg viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="3" y="1" width="10" height="14" fill="#fff"/><rect x="5" y="4" width="6" height="1" fill="#1B2530"/><rect x="5" y="6" width="6" height="1" fill="#1B2530"/><rect x="5" y="8" width="6" height="1" fill="#1B2530"/><rect x="5" y="10" width="4" height="1" fill="#1B2530"/></svg>Manual.txt</button>
+      <button class="ico" data-open="w-rank"><svg viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="4" y="2" width="8" height="6" fill="#FFD23F"/><rect x="2" y="3" width="2" height="3" fill="#FFD23F"/><rect x="12" y="3" width="2" height="3" fill="#FFD23F"/><rect x="7" y="8" width="2" height="3" fill="#FFD23F"/><rect x="5" y="11" width="6" height="2" fill="#fff"/><rect x="4" y="13" width="8" height="1" fill="#1B2530"/></svg>Leaderboard</button>
+      <button class="ico" data-open="w-lobby"><svg viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="2" y="9" width="12" height="5" fill="#fff"/><rect x="4" y="3" width="3" height="3" fill="#F2C79B"/><rect x="3" y="6" width="5" height="4" fill="#E91E63"/><rect x="10" y="4" width="3" height="3" fill="#F2C79B"/><rect x="9" y="7" width="5" height="3" fill="#FFD23F"/></svg>Lobby</button>
+      <button class="ico" data-open="w-run"><svg viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="1" y="2" width="14" height="12" fill="#000080"/><rect x="1" y="11" width="14" height="3" fill="#008080"/><rect x="3" y="7" width="4" height="4" fill="#E0A458"/><rect x="10" y="6" width="2" height="5" fill="#FF3B3B"/></svg>CEO Run</button>
+      <button class="ico" data-open="w-ai"><svg viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="2" y="2" width="12" height="9" fill="#fff"/><rect x="4" y="11" width="3" height="3" fill="#fff"/><rect x="4" y="4" width="8" height="1" fill="#0A246A"/><rect x="4" y="6" width="8" height="1" fill="#0A246A"/><rect x="4" y="8" width="5" height="1" fill="#0A246A"/></svg>Advisor</button>
+      <button class="ico" data-open="w-coin"><svg viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="3" y="2" width="4" height="9" fill="#E91E63"/><rect x="9" y="2" width="4" height="9" fill="#E91E63"/><rect x="3" y="11" width="10" height="3" fill="#E91E63"/><rect x="3" y="2" width="4" height="3" fill="#fff"/><rect x="9" y="2" width="4" height="3" fill="#fff"/></svg>PPP Coin</button>
+    </div>
+
+    <section class="win out" id="w-launch" aria-label="Start a Company">
+      <div class="tbar"><span>Start a Company</span><button class="btn x" data-close aria-label="Close">x</button></div>
+      <form class="body" id="launchForm" novalidate>
+        <div><h2>Found your startup</h2><p class="lead">Pick a real stock, pick a mascot, and take it public. Your company is a real coin, and you are its CEO.</p></div>
+        <div class="grid2">
+          <div><label for="stock">Stock it is tied to</label><select id="stock"></select></div>
+          <div><label id="mLabel">Mascot</label><div class="row" id="mascots" role="group" aria-labelledby="mLabel"></div></div>
+        </div>
+        <div class="grid2">
+          <div><label for="coName">Company name</label><input type="text" id="coName" maxlength="32" autocomplete="off"></div>
+          <div><label for="coSym">Symbol</label><input type="text" id="coSym" maxlength="10" autocomplete="off"></div>
+        </div>
+        <div><label for="pic">Or upload your own logo</label><input type="file" id="pic" accept="image/*"></div>
+        <div><label for="buy">Your first buy in SOL (optional)</label><input type="text" id="buy" inputmode="decimal" value="0" style="max-width:140px" autocomplete="off"></div>
+        <div class="card in"><div class="face" id="pvFace"></div><div style="min-width:0"><b id="pvName"></b><small id="pvSym"></small><div style="margin-top:4px"><span class="tagp" id="pvTag"></span> <span class="tagp" style="background:var(--title-a)">CEO: you</span></div><p class="lead" id="pvNote" style="font-size:12px;margin-top:4px"></p></div></div>
+        <div class="row"><button class="btn go" type="submit">Go public (IPO)</button><button class="btn" type="button" id="reroll">New name</button></div>
+        <p id="status" role="status"></p>
+      </form>
+      <div class="sbar">Any name works, but each name and symbol can only be launched once. The stock link cannot be changed after launch.</div>
+    </section>
+
+    <section class="win out" id="w-lobby" aria-label="Lobby">
+      <div class="tbar"><span>Lobby.exe</span><button class="btn x" data-close aria-label="Close">x</button></div>
+      <div class="body">
+        <div class="in" style="line-height:0"><canvas id="lobby" width="520" height="320" style="width:100%;height:auto;display:block;cursor:pointer" aria-label="Office lobby. Click a tile to walk, click a player to see their companies."></canvas></div>
+        <div class="in" style="padding:6px 10px" id="lobbyCard">Click a tile to walk. The floor scrolls with you. Click a player to see who they are.</div>
+        <form class="row" id="chatForm" style="flex-wrap:nowrap"><input type="text" id="chatIn" maxlength="60" placeholder="Say something" autocomplete="off" style="flex:1;min-width:0"><button class="btn" type="submit">Say</button></form>
+      </div>
+      <div class="sbar" id="lobbyStat">Connecting to the lobby...</div>
+    </section>
+
+    <section class="win out" id="w-exchange" hidden aria-label="Exchange">
+      <div class="tbar"><span>Pppercolator Exchange - Web Navigator</span><button class="btn x" data-close aria-label="Close">x</button></div>
+      <div class="addr"><span>Address</span><div class="in">http://launchpad.pppercolator.fun/exchange</div></div>
+      <div class="body">
+        <div class="tabs" role="tablist" id="sortTabs">
+          <button class="btn" role="tab" data-sort="mcap" aria-selected="true">Top market cap</button>
+          <button class="btn" role="tab" data-sort="new" aria-selected="false">Newest</button>
+          <button class="btn" role="tab" data-sort="treasury" aria-selected="false">Biggest treasury</button>
+          <button class="btn" role="tab" data-sort="grad" aria-selected="false">Near graduation</button>
+        </div>
+        <div class="in sheet"><table><thead><tr><th>#</th><th>Company</th><th>Stock</th><th>CEO</th><th class="n">Market cap</th><th class="n">Treasury</th></tr></thead><tbody id="rows"></tbody></table><div class="empty" id="empty">NO COMPANIES LISTED YET. BE THE FIRST TO GO PUBLIC.</div></div>
+      </div>
+      <div class="sbar">Everyone sees the same exchange, live from the chain.</div>
+    </section>
+
+    <section class="win out" id="w-office" hidden aria-label="My Office">
+      <div class="tbar"><span>My Office</span><button class="btn x" data-close aria-label="Close">x</button></div>
+      <div class="body">
+        <div><h2>CEO desk</h2><p class="lead">Plug in your wallet to see the companies you run and the fees you earned as CEO.</p></div>
+        <div class="in" style="padding:12px;display:grid;gap:6px"><div>Wallet: <b id="walletTxt">not connected</b></div><div>Companies founded: <b>0</b></div><div>CEO fees to claim: <b>0 SOL</b></div></div>
+        <div class="row"><button class="btn go" type="button" id="connectBtn">Connect wallet</button></div>
+      </div>
+      <div class="sbar">We never hold your keys. Your wallet signs everything.</div>
+    </section>
+
+    <section class="win out" id="w-rank" hidden aria-label="Leaderboard">
+      <div class="tbar"><span>Leaderboard - Web Navigator</span><button class="btn x" data-close aria-label="Close">x</button></div>
+      <div class="addr"><span>Address</span><div class="in">http://launchpad.pppercolator.fun/leaderboard</div></div>
+      <div class="body">
+        <div class="tabs" role="tablist" id="rankTabs">
+          <button class="btn" role="tab" data-col="Profit made" aria-selected="true">Top traders</button>
+          <button class="btn" role="tab" data-col="Up the most" aria-selected="false">Biggest gains</button>
+          <button class="btn" role="tab" data-col="CEO fees earned" aria-selected="false">Top CEOs</button>
+        </div>
+        <div class="in sheet"><table><thead><tr><th>#</th><th>Wallet</th><th>Trades</th><th class="n" id="rankCol">Profit made</th></tr></thead><tbody></tbody></table><div class="empty">NO TRADES YET. THE BOARD FILLS AS PEOPLE TRADE.</div></div>
+      </div>
+      <div class="sbar">Public and counted from on-chain trades on Pppercolator Launchpad launches only.</div>
+    </section>
+
+    <section class="win out" id="w-run" hidden aria-label="CEO Run">
+      <div class="tbar"><span>CEO Run.exe</span><button class="btn x" data-close aria-label="Close">x</button></div>
+      <div class="body">
+        <div class="in" style="line-height:0"><canvas id="run" width="520" height="200" style="width:100%;height:auto;display:block;cursor:pointer;touch-action:manipulation" aria-label="Jump and run game. Press space or tap to jump over the red candles."></canvas></div>
+        <p class="lead">Your company mascot runs the chart. Jump the red candles. Pick another mascot in Start a Company to change the runner.</p>
+      </div>
+      <div class="sbar">Space or tap to jump. Your best score is saved on this computer.</div>
+    </section>
+
+    <section class="win out" id="w-ai" hidden aria-label="Advisor">
+      <div class="tbar"><span>Advisor.exe</span><button class="btn x" data-close aria-label="Close">x</button></div>
+      <div class="body">
+        <div><h2>Your CEO advisor</h2><p class="lead">An AI assistant that writes a launch plan for the company you are building. It gives no price calls.</p></div>
+        <div class="row"><button class="btn go" type="button" id="aiPlan">Write my 7 day plan</button></div>
+        <form class="row" id="aiForm" style="flex-wrap:nowrap"><input type="text" id="aiQ" maxlength="200" placeholder="Or ask the advisor a question" autocomplete="off" style="flex:1;min-width:0"><button class="btn" type="submit">Ask</button></form>
+        <div class="in note" id="aiOut" style="min-height:120px;max-height:300px;overflow:auto">Pick your stock and mascot, then press the button.</div>
+      </div>
+      <div class="sbar" id="aiStat">Ready.</div>
+    </section>
+
+    <section class="win out" id="w-manual" hidden aria-label="Manual">
+      <div class="tbar"><span>Manual.txt</span><button class="btn x" data-close aria-label="Close">x</button></div>
+      <div class="body"><div class="in note">HOW THE GAME WORKS
+
+1. START A COMPANY
+   Pick a real stock and a mascot. Your
+   company launches as a real coin.
+
+2. PEOPLE TRADE IT
+   Every trade pays a small fee in SOL.
+
+3. THE CEO EARNS
+   - Pump.fun pays the creator fee to you,
+     the CEO, from your own wallet.
+   - There is no platform cut on launches
+     yet. Treasury stock buys are planned,
+     not live.
+
+4. CLIMB THE EXCHANGE
+   Companies are ranked by market cap.
+   Fill the curve and the company graduates
+   with its liquidity locked for good.
+
+FAIR PLAY
+   - Whole supply on the curve. No presale.
+   - Nobody can print more or freeze you.
+
+READ THIS
+   Coins can go to zero. A coin is not a
+   share and gives no claim on the stock.
+   You sign every launch from your own
+   wallet. The launch flow is in beta.
+   This is not financial advice.
+
+(C) 2000 Pppercolator Launchpad. Best viewed at 800x600
+in 256 colours.</div></div>
+    </section>
+
+    <section class="win out" id="w-coin" hidden aria-label="PPP Coin">
+      <div class="tbar"><span>PPP Coin</span><button class="btn x" data-close aria-label="Close">x</button></div>
+      <div class="body">
+        <div><h2>The flywheel</h2><p class="lead">Name: Pppercolator. Ticker: PPP. It is live on Pump.fun. Contract: Ho7iohoM6UN96yoxzBNzz9aXZpNW3AyUVuEmBdAQpump</p></div>
+        <div class="fly in">
+          <svg class="wheel" viewBox="0 0 120 120" aria-hidden="true"><g class="spin"><circle cx="60" cy="60" r="44" fill="none" stroke="#E91E63" stroke-width="6" stroke-dasharray="52 17.1"/></g><circle cx="60" cy="60" r="24" fill="#0A3B8C"/><text x="60" y="65" text-anchor="middle" font-family="VT323,monospace" font-size="16" fill="#fff">PPP</text></svg>
+          <ol>
+            <li>Every company on the exchange pays trade fees.</li>
+            <li>Site fees from the perps terminal, plus creator fees from PPP itself, go to the team wallet.</li>
+            <li>The team uses them to buy back PPP. Every buyback gets listed with its transaction.</li>
+            <li>Every buy and burn is posted with its transaction.</li>
+          </ol>
+        </div>
+        <div class="stats"><div class="in"><small>Fees collected</small><b>0 SOL</b></div><div class="in"><small>Bought back</small><b>0 PPP</b></div><div class="in"><small>Buybacks made</small><b>none yet</b></div></div>
+        <div class="in" style="padding:10px">Contract address: <b>not launched yet</b>. The numbers go live at launch.</div>
+        <div class="in" style="padding:10px;overflow-wrap:anywhere">Dev wallet: <b style="font-family:var(--term);font-size:16px;font-weight:normal">Dbjo7CBkRepRAhcaKKxV1BjWyQUCVRdFdHWupyL5xoVu</b></div>
+      </div>
+      <div class="sbar">A burn lowers supply. It does not guarantee a price.</div>
+    </section>
+  </main>
+
+  <div class="smenu out" id="smenu" hidden>
+    <div class="sside">Pppercolator Launchpad <b id="eraLbl">1993</b></div>
+    <div class="slist">
+      <button data-open="w-launch">Start a Company</button>
+      <button data-open="w-lobby">Lobby</button>
+      <button data-open="w-exchange">Exchange</button>
+      <button data-open="w-rank">Leaderboard</button>
+      <button data-open="w-run">CEO Run</button>
+      <button data-open="w-ai">Advisor</button>
+      <button data-open="w-office">My Office</button>
+      <button data-open="w-coin">PPP Coin</button>
+      <button data-open="w-manual">Manual.txt</button>
+      <button id="tmOpen" type="button">Time Machine...</button>
+    </div>
+  </div>
+  <section class="win out" id="msgbox" hidden role="alertdialog" aria-labelledby="msgText">
+    <div class="tbar"><span>Pppercolator Launchpad</span><button class="btn x" data-close aria-label="Close">x</button></div>
+    <div class="body"><div class="msgrow"><i>!</i><p id="msgText"></p></div><div class="row" style="justify-content:center"><button class="btn go" data-close id="msgOk" style="min-width:80px">OK</button><button class="btn" data-close id="msgNo" style="min-width:80px" hidden>Cancel</button></div></div>
+  </section>
+  <aside class="guide" id="guide">
+    <div class="bubble" id="gBubble" aria-live="polite"><b>Benny the broker</b><p id="gText"></p><div class="row"><button class="btn" id="gNext" type="button">Next</button><button class="btn" id="gHide" type="button">Hide</button></div></div>
+    <button class="gface" id="gFace" type="button" aria-label="Benny the broker. Click for help."></button>
+  </aside>
+  <footer class="task out">
+    <button class="btn start" id="startBtn" aria-haspopup="true"><i></i>Start</button>
+    <div class="tape in"><span id="tape">MARKET OPEN +++ NO COMPANIES LISTED YET +++ FOUND THE FIRST ONE +++ PPP COIN IS LIVE ON PUMP.FUN +++</span></div>
+    <div class="clock in" id="clock">00:00</div>
+  </footer>
+</div>
+
+<script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id);};
+  /* boot */
+  var boot=$("boot");function off(){boot.hidden=true;}
+  boot.addEventListener("click",off);boot.addEventListener("keydown",off);setTimeout(off,1800);
+
+  /* time machine */
+  function setEra(y){document.documentElement.dataset.era=y;$("eraLbl").textContent=y;try{localStorage.setItem("sb_era",y);}catch(e){}}
+  (function(){var saved="";try{saved=localStorage.getItem("sb_era")||"";}catch(e){}
+    if(saved==="1975"||saved==="1993"||saved==="2009"){setEra(saved);}else{document.documentElement.dataset.era="1993";$("tm").hidden=false;}
+    $("tm").addEventListener("click",function(e){var b=e.target.closest("[data-era]");if(!b)return;setEra(b.dataset.era);$("tm").hidden=true;});
+    $("tmOpen").addEventListener("click",function(){$("tm").hidden=false;});$("pmTime").addEventListener("click",function(){$("tm").hidden=false;});
+    [].forEach.call(document.querySelectorAll(".ico"),function(b){b.title=b.textContent.trim();});
+    document.addEventListener("keydown",function(e){if(document.documentElement.dataset.era!=="1975")return;var m=/^F([1-9])$/.exec(e.key);if(m){var b=document.querySelectorAll(".ico")[m[1]-1];if(b){e.preventDefault();b.click();}}else if(e.key==="Escape"){var ws=[].filter.call(document.querySelectorAll(".desktop>.win"),function(w){return !w.hidden;}).sort(function(a,b){return (+b.style.zIndex||0)-(+a.style.zIndex||0);});if(ws[0])ws[0].hidden=true;}});
+  })();
+
+  /* windows */
+  var z=10, desk=$("desktop");
+  function front(w){w.style.zIndex=++z;}
+  function open(id){var w=$(id);w.hidden=false;front(w);}
+  function say(t){$("msgText").textContent=t;$("msgNo").hidden=true;var w=$("msgbox");w.hidden=false;w.style.zIndex=999;}
+  function confirmBox(t){say(t);$("msgNo").hidden=false;return new Promise(function(res){var done=false;function fin(v){if(done)return;done=true;$("msgNo").hidden=true;res(v);}
+    $("msgOk").addEventListener("click",function(){fin(true);},{once:true});$("msgNo").addEventListener("click",function(){fin(false);},{once:true});
+    $("msgbox").querySelector(".x").addEventListener("click",function(){fin(false);},{once:true});});}
+  document.addEventListener("click",function(e){
+    var sm=$("smenu");if(e.target.closest("#startBtn")){sm.hidden=!sm.hidden;return;}sm.hidden=true;
+    var o=e.target.closest("[data-open]");if(o){open(o.dataset.open);return;}
+    var c=e.target.closest("[data-close]");if(c){c.closest(".win").hidden=true;}
+  });
+  [].forEach.call(document.querySelectorAll(".win"),function(w){
+    w.addEventListener("pointerdown",function(){if(w.id!=="msgbox")front(w);});
+    var bar=w.querySelector(".tbar"),d=null;
+    bar.addEventListener("pointerdown",function(e){
+      if(e.target.closest("button")||w.id==="msgbox"||document.documentElement.dataset.era==="1975"||!matchMedia("(min-width:760px)").matches)return;
+      var r=w.getBoundingClientRect(),p=desk.getBoundingClientRect();
+      d={x:e.clientX-r.left,y:e.clientY-r.top,px:p.left,py:p.top,pw:p.width,ph:p.height,w:r.width};bar.setPointerCapture(e.pointerId);
+    });
+    bar.addEventListener("pointermove",function(e){
+      if(!d)return;
+      w.style.left=Math.max(-d.w+80,Math.min(d.pw-80,e.clientX-d.px-d.x))+"px";
+      w.style.top=Math.max(0,Math.min(d.ph-30,e.clientY-d.py-d.y))+"px";
+    });
+    bar.addEventListener("pointerup",function(){d=null;});
+  });
+
+  /* clock */
+  function tick(){var n=new Date();$("clock").textContent=("0"+n.getHours()).slice(-2)+":"+("0"+n.getMinutes()).slice(-2);}
+  tick();setInterval(tick,20000);
+
+  /* company builder. Names are parody nicknames, not the companies' own names. */
+  var STOCKS=[["KO","Coca-Cola","Cola"],["NVDA","Nvidia","Nvidia"],["TSLA","Tesla","Tesla"],["AAPL","Apple","Apple"],["MSFT","Microsoft","Micro"],["AMZN","Amazon","Amazon"],["META","Meta","Meta"],["GOOGL","Google","Google"],["MCD","McDonald's","Mc"],["COIN","Coinbase","Coinbase"],["GME","GameStop","Game"],["INTC","Intel","Intel"],["NKE","Nike","Nike"],["HOOD","Robinhood","Hood"],["PLTR","Palantir","Palantir"],["RBLX","Roblox","Blox"],["RDDT","Reddit","Reddit"],["WEN","Wendy's","Wendy"]];
+  var MASCOTS=[["Inu"],["Cat"],["Frog"],["Bear"],["Bull"]];
+  var SPR={"Inu":["............",".DD......DD.","DBBD....DBBD","DBBDDDDDDBBD","DBBBBBBBBBBD",".DBEBBBBEBD.",".DBBBBBBBBD.",".DBBWPPWBBD.",".DBBWWWWBBD.","..DBBPPBBD..","...DDDDDD...","............"],"Cat":["............",".D........D.","DBD......DBD","DBBD....DBBD","DBBBDDDDBBBD","DBBBBBBBBBBD","DBEBBBBBBEBD","DBBBBPPBBBBD","DBWWBBBBWWBD",".DBBBBBBBBD.","..DDDDDDDD..","............"],"Frog":["............",".DDD....DDD.","DWWWD..DWWWD","DWEWDDDDWEWD","DBBBBBBBBBBD","DBBBBBBBBBBD","DBDBBBBBBDBD","DBBDDDDDDBBD","DBBBBPPBBBBD",".DBBBBBBBBD.","..DDDDDDDD..","............"],"Bear":["............",".DD......DD.","DBBD....DBBD","DBBBDDDDBBBD","DBBBBBBBBBBD","DBEBBBBBBEBD","DBBBWWWWBBBD","DBBWWDDWWBBD","DBBWWWWWWBBD",".DBBBBBBBBD.","..DDDDDDDD..","............"],"Bull":["............","W..........W","WW........WW",".WDDDDDDDDW.",".DBBBBBBBBD.",".DBEBBBBEBD.",".DBBBBBBBBD.",".DWWWWWWWWD.",".DWDWWWWDWD.",".DWWWPPWWWD.","..DDDDDDDD..","............"]};
+  var BODY={Inu:"#E0A458",Cat:"#F28C28",Frog:"#3FB950",Bear:"#8B5E3C",Bull:"#9AA5B5"};
+  var BG=["#0083CB","#E91E63","#7B61FF","#00A389","#FF8A00","#2D3A8C","#C2185B","#008FA3","#5B8C00","#9C27B0"];
+  var INK={D:"#1B2530",W:"#FFFFFF",P:"#FF6FA5"};
+  function sprite(k){var o='<svg class="spr" viewBox="0 0 12 12" shape-rendering="crispEdges" role="img" aria-label="'+k+' mascot"><g>';
+    SPR[k].forEach(function(row,y){for(var x=0;x<12;x++){var c=row.charAt(x);if(c===".")continue;
+      var f=c==="B"||c==="E"?BODY[k]:INK[c];o+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+f+'"/>';
+      if(c==="E")o+='<rect class="ey" x="'+x+'" y="'+y+'" width="1" height="1" fill="#1B2530"/>';}});
+    return o+"</g></svg>";}
+  var ALT=["Corp","Inc","dot com","2000","Online"];
+  var m=0, touched=false, custom=false, customImg=null, sel=$("stock"), mb=$("mascots");
+  STOCKS.forEach(function(s){var o=document.createElement("option");o.value=s[0];o.textContent=s[0]+"  "+s[1];sel.appendChild(o);});
+  MASCOTS.forEach(function(k,i){var b=document.createElement("button");b.type="button";b.className="btn";b.textContent=k[0];b.setAttribute("aria-pressed",i===0?"true":"false");
+    b.addEventListener("click",function(){m=i;custom=false;$("pic").value="";[].forEach.call(mb.children,function(c,j){c.setAttribute("aria-pressed",j===i?"true":"false");});suggest(false);});mb.appendChild(b);});
+  function nick(){return STOCKS[sel.selectedIndex][2];}
+  function suggest(extra){
+    if(touched&&!extra){paint();return;}
+    var n=nick()+" "+MASCOTS[m][0]+(extra?" "+ALT[Math.floor(Math.random()*ALT.length)]:"");
+    $("coName").value=n;$("coSym").value=(nick().slice(0,4)+MASCOTS[m][0].slice(0,3)).toUpperCase();touched=false;paint();
+  }
+  function paint(){
+    if(!custom){var f=$("pvFace");f.style.background=BG[sel.selectedIndex%BG.length];f.innerHTML=sprite(MASCOTS[m][0]);}
+    $("pvNote").textContent="Parody coin. Not affiliated with "+STOCKS[sel.selectedIndex][1]+".";
+    $("pvName").textContent=$("coName").value.trim()||"Your company";
+    $("pvSym").textContent="$"+($("coSym").value.trim().toUpperCase()||"SYMBOL");
+    $("pvTag").textContent="TIED TO "+sel.value;
+  }
+  sel.addEventListener("change",function(){suggest(false);});
+  $("coName").addEventListener("input",function(){touched=true;paint();});
+  $("coSym").addEventListener("input",function(){this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,"");touched=true;paint();});
+  $("reroll").addEventListener("click",function(){suggest(true);});
+  $("pic").addEventListener("change",function(){var f=this.files&&this.files[0];if(!f||f.type.indexOf("image/")!==0)return;var r=new FileReader();
+    r.onload=function(){custom=true;var i=new Image();i.alt="Your logo";i.src=r.result;customImg=i;var b=$("pvFace");b.textContent="";b.style.background="#fff";b.appendChild(i);};r.readAsDataURL(f);});
+  suggest(false);
+
+  /* exchange. COMPANIES is filled from the chain once launching is live: {name,sym,stock,ceo,mcap,treasury,progress,created} */
+  var COMPANIES=[], sortKey="mcap";
+  function usd(n){return n>=1e6?"$"+(n/1e6).toFixed(2)+"M":n>=1e3?"$"+(n/1e3).toFixed(1)+"K":"$"+Math.round(n);}
+  function draw(){
+    var by={mcap:function(a,b){return b.mcap-a.mcap;},new:function(a,b){return b.created-a.created;},treasury:function(a,b){return b.treasury-a.treasury;},grad:function(a,b){return b.progress-a.progress;}};
+    var rows=COMPANIES.slice().sort(by[sortKey]),tb=$("rows");tb.textContent="";$("empty").hidden=rows.length>0;
+    rows.forEach(function(c,i){var tr=document.createElement("tr");
+      [i+1,c.name+" $"+c.sym,c.stock,c.ceo,c.mcap==null?"on Pump.fun":usd(c.mcap),c.treasury==null?"n/a":usd(c.treasury)].forEach(function(v,j){var td=document.createElement("td");td.textContent=v;if(j>3)td.className="n";tr.appendChild(td);});tb.appendChild(tr);});
+  }
+  $("sortTabs").addEventListener("click",function(e){var t=e.target.closest("[data-sort]");if(!t)return;sortKey=t.dataset.sort;[].forEach.call(this.children,function(c){c.setAttribute("aria-selected",c===t?"true":"false");});draw();});
+  draw();
+  $("rankTabs").addEventListener("click",function(e){var t=e.target.closest("[data-col]");if(!t)return;$("rankCol").textContent=t.dataset.col;[].forEach.call(this.children,function(c){c.setAttribute("aria-selected",c===t?"true":"false");});});
+
+  /* launch desk: real Pump.fun mainnet launch. The server builds an unsigned transaction; only the player's wallet signs. */
+  var FN="https://mdggkjocllyqxpthvtop.supabase.co/functions/v1/stockbros-launch",REST="https://mdggkjocllyqxpthvtop.supabase.co/rest/v1/sb_companies",
+      ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1kZ2dram9jbGx5cXhwdGh2dG9wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMwMjk5MTAsImV4cCI6MjEwODYwNTkxMH0.Y1djwNT24Rh26HZa5z_ao72HsGACnbQNLHfj2sn6zDE";
+  function logoData(){
+    var c=document.createElement("canvas");c.width=c.height=480;var g=c.getContext("2d");
+    if(custom&&customImg&&customImg.naturalWidth){g.fillStyle="#fff";g.fillRect(0,0,480,480);var w=customImg.naturalWidth,h=customImg.naturalHeight,k2=Math.max(480/w,480/h);g.drawImage(customImg,(480-w*k2)/2,(480-h*k2)/2,w*k2,h*k2);return c.toDataURL("image/jpeg",.85);}
+    var k=MASCOTS[m][0];g.fillStyle=BG[sel.selectedIndex%BG.length];g.fillRect(0,0,480,480);
+    SPR[k].forEach(function(row,y){for(var x=0;x<12;x++){var ch=row.charAt(x);if(ch===".")continue;g.fillStyle=ch==="B"?BODY[k]:ch==="E"?"#1B2530":INK[ch];g.fillRect(x*40,y*40,40,40);}});
+    return c.toDataURL("image/png");
+  }
+  async function api(body){
+    var r=await fetch(FN,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+ANON,"apikey":ANON},body:JSON.stringify(body)});
+    var j=await r.json().catch(function(){return{};});if(!r.ok)throw new Error(j.error||("launch desk error "+r.status));return j;
+  }
+  async function loadCompanies(){
+    try{
+      var r=await fetch(REST+"?select=name,symbol,stock,creator,mint,created_at&order=created_at.desc&limit=200",{headers:{"apikey":ANON,"Authorization":"Bearer "+ANON}});
+      if(!r.ok)return;var rows=await r.json();
+      COMPANIES=rows.map(function(c){return{name:c.name,sym:c.symbol,stock:c.stock,ceo:String(c.creator).slice(0,4)+"..."+String(c.creator).slice(-4),mint:c.mint,mcap:null,treasury:null,progress:0,created:Date.parse(c.created_at)||0};});
+      draw();
+      if(rows.length)$("tape").textContent="MARKET OPEN +++ "+rows.length+" COMPANIES LISTED +++ NEWEST: "+rows[0].name.toUpperCase()+" ($"+rows[0].symbol+") +++";
+    }catch(e){}
+  }
+  async function goPublic(){
+    var W=window.solanaWeb3;
+    if(!W){say("The wallet library did not load. Reload the page and try again.");return;}
+    var name=$("coName").value.trim(),symbol=$("coSym").value.trim().toUpperCase(),buy=Math.max(0,Math.min(5,parseFloat($("buy").value)||0));
+    var yes=await confirmBox("This creates a REAL coin on Pump.fun mainnet: "+name+" ($"+symbol+"). Your wallet pays the network cost plus a first buy of "+buy+" SOL. It cannot be undone. Continue?");
+    if(!yes)return;
+    var mint=W.Keypair.generate(),mintStr=mint.publicKey.toBase58(),sent=false;
+    try{
+      say("Filing the paperwork...");
+      var p=await api({action:"prepare",name:name,symbol:symbol,stock:sel.value,mascot:MASCOTS[m][0],creator:pk,mint:mintStr,buy:buy,image:logoData()});
+      var tx=W.VersionedTransaction.deserialize(Uint8Array.from(atob(p.tx),function(ch){return ch.charCodeAt(0);}));
+      tx.sign([mint]);
+      say("Check your wallet and approve the launch.");
+      var out=await prov().signAndSendTransaction(tx);sent=true;
+      await api({action:"confirm",mint:mintStr,creator:pk,signature:out.signature}).catch(function(){});
+      say("You are public. "+name+" is on Pump.fun at pump.fun/coin/"+mintStr);loadCompanies();
+    }catch(err){
+      if(!sent)api({action:"cancel",mint:mintStr,creator:pk}).catch(function(){});
+      say(sent?"The launch was sent, but listing it here failed. Check your wallet history.":"Launch stopped: "+((err&&err.message)||"nothing was sent")+".");
+    }
+  }
+  loadCompanies();
+
+  /* wallet */
+  var pk=null;
+  function prov(){return window.solana||(window.phantom&&window.phantom.solana);}
+  async function connect(){
+    var p=prov();
+    if(!p||!p.isPhantom){$("walletTxt").textContent="no Solana wallet found in this browser";return false;}
+    try{var r=await p.connect();pk=r.publicKey.toString();$("walletTxt").textContent=pk.slice(0,4)+"..."+pk.slice(-4);$("connectBtn").textContent="Disconnect";return true;}catch(e){return false;}
+  }
+  $("connectBtn").addEventListener("click",async function(){
+    if(pk){try{await prov().disconnect();}catch(e){}pk=null;$("walletTxt").textContent="not connected";this.textContent="Connect wallet";}else{await connect();}
+  });
+  $("launchForm").addEventListener("submit",async function(e){
+    e.preventDefault();var st=$("status");
+    if(!$("coName").value.trim()||!$("coSym").value.trim()){say("Your company needs a name and a symbol.");return;}
+    if(!pk){var ok=await connect();if(!ok){say("No Solana wallet found. Install Phantom to go public.");return;}}
+    goPublic();
+  });
+  /* guide: Benny the broker explains the launchpad, step by step and per window */
+  (function(){
+    var TOUR=["Hi, I am Benny, your broker. Want the 30 second tour? Press Next. You can change the year from the Start menu.",
+      "Pppercolator Launchpad is a launchpad dressed up as a game. Every company you start is a real coin tied to a real stock.",
+      "Open Start a Company, pick a stock and a mascot, then go public. That makes you the CEO. On the live site this is a real mainnet launch.",
+      "Every trade pays a small fee on Pump.fun. As CEO you earn the creator share of it.",
+      "The Exchange ranks every company by market cap. The Leaderboard shows the top traders and CEOs.",
+      "One warning. Coins can go to zero, and a coin is not a share in the real company.",
+      "That is it. Visit the Lobby, play CEO Run, or ask the Advisor for a plan. Click me any time."];
+    var TIP={"w-launch":"Pick the stock, pick a mascot, edit the name if you like. Each name and symbol can only be launched once.",
+      "w-exchange":"This is the board. Biggest companies on top. Use the tabs to sort by newest or by treasury.",
+      "w-rank":"Top traders by profit, biggest gains, and the CEOs who earned the most fees.",
+      "w-lobby":"Click a tile to walk. Type to talk. Click another player to see which companies they run.",
+      "w-run":"Press space or tap to jump the red candles. Your mascot is the runner.",
+      "w-ai":"The Advisor writes you a 7 day launch plan. It never gives price calls.",
+      "w-office":"Connect your wallet here to see your companies and the CEO fees you can claim.",
+      "w-coin":"PPP is the main coin. The team uses site fees to buy it back. Each buyback is listed here.",
+      "w-manual":"The full rules, the fair play list and the risks, all on one page."};
+    var i=0,timer=null,txt=$("gText"),bub=$("gBubble"),quiet=matchMedia("(prefers-reduced-motion:reduce)").matches;
+    $("gFace").innerHTML=sprite("Bull");
+    function say(t){clearInterval(timer);bub.hidden=false;if(quiet){txt.textContent=t;return;}var n=0;txt.textContent="";timer=setInterval(function(){n+=2;txt.textContent=t.slice(0,n);if(n>=t.length)clearInterval(timer);},24);}
+    $("gNext").addEventListener("click",function(){i=(i+1)%TOUR.length;say(TOUR[i]);});
+    $("gHide").addEventListener("click",function(){clearInterval(timer);bub.hidden=true;try{localStorage.setItem("sb_guide","off");}catch(e){}});
+    $("gFace").addEventListener("click",function(){try{localStorage.removeItem("sb_guide");}catch(e){}say(TOUR[i]);});
+    document.addEventListener("click",function(e){var o=e.target.closest("[data-open]");if(o&&TIP[o.dataset.open]&&!bub.hidden)say(TIP[o.dataset.open]);});
+    var off=false;try{off=localStorage.getItem("sb_guide")==="off";}catch(e){}
+    if(off)bub.hidden=true;else setTimeout(function(){say(TOUR[0]);},2000);
+  })();
+
+  /* runner mini game: the selected mascot jumps red candles */
+  (function(){
+    var cv=$("run"),g=cv.getContext("2d"),W=520,H=200,GY=160,st="idle",y=0,vy=0,obs=[],t=0,next=60,score=0,best=0,sp=4;
+    try{best=+localStorage.getItem("sb_best")||0;}catch(e){}
+    function hero(px,py){var k=MASCOTS[m][0],rows=SPR[k];for(var r=0;r<12;r++)for(var c=0;c<12;c++){var ch=rows[r].charAt(c);if(ch===".")continue;g.fillStyle=ch==="B"?BODY[k]:ch==="E"?"#1B2530":INK[ch];g.fillRect(px+c*3,py+r*3,3,3);}}
+    function jump(){if(st!=="run"){y=0;vy=0;obs=[];t=0;next=60;score=0;sp=4;st="run";return;}if(y===0)vy=9.5;}
+    function loop(){
+      requestAnimationFrame(loop);if(cv.offsetParent===null)return;
+      g.fillStyle="#000080";g.fillRect(0,0,W,H);g.fillStyle="#008080";g.fillRect(0,GY,W,H-GY);
+      g.fillStyle="rgba(255,255,255,.12)";for(var i=0;i<W;i+=40)g.fillRect((i-(score*2)%40+W)%W,GY+8,20,3);
+      if(st==="run"){
+        t++;score++;sp=4+score/600;vy-=.55;y=Math.max(0,y+vy);if(y===0)vy=0;
+        if(t>=next){obs.push({x:W,h:18+Math.random()*26});next=t+Math.max(42,95-Math.floor(score/150))+Math.floor(Math.random()*30);}
+        obs.forEach(function(o){o.x-=sp;});obs=obs.filter(function(o){return o.x>-20;});
+        obs.forEach(function(o){if(o.x<88&&o.x+12>68&&y<o.h-4){st="over";if(score>best){best=score;try{localStorage.setItem("sb_best",best);}catch(e){}}}});
+      }
+      obs.forEach(function(o){g.fillStyle="#FF3B3B";g.fillRect(o.x,GY-o.h,12,o.h);g.fillRect(o.x+5,GY-o.h-8,2,8);});
+      hero(60,GY-36-y);
+      g.fillStyle="#fff";g.font="18px VT323,monospace";g.textAlign="left";g.fillText("SCORE "+Math.floor(score/10)+"   BEST "+Math.floor(best/10),10,20);
+      g.textAlign="center";if(st==="idle")g.fillText("PRESS SPACE OR TAP TO RUN. JUMP THE RED CANDLES.",W/2,90);if(st==="over")g.fillText("REKT. TAP TO TRY AGAIN.",W/2,90);
+    }
+    cv.addEventListener("pointerdown",jump);
+    document.addEventListener("keydown",function(e){if(e.code==="Space"&&!$("w-run").hidden&&!/INPUT|TEXTAREA|SELECT|BUTTON/.test(e.target.tagName)){e.preventDefault();jump();}});
+    loop();
+  })();
+
+  /* advisor: asks Claude through the page, only on a click */
+  (function(){
+    var busy=false,out=$("aiOut"),stat=$("aiStat");
+    var RULES="You are the in-game business advisor in Pppercolator Launchpad, a startup simulator styled like an old trading desk computer. The player is CEO of a parody meme coin tied to a real stock. Write in plain short sentences with a light 2000s office tone. Never give price predictions, buy or sell calls, or promises of profit. Never suggest fake volume, wash trading, bundling, paid shills posing as fans, or misleading claims about the real company. Remind once that the coin is a parody and not affiliated with the company. Plain text only, no markdown symbols.";
+    async function ask(q){
+      if(busy)return;busy=true;stat.textContent="Thinking...";out.textContent="";
+      var sample=null;try{sample=window.claude&&window.claude.use?await window.claude.use("sample"):null;}catch(e){}
+      if(!sample){out.textContent="The advisor is offline in this view. It works when the page is opened by a signed in player.";stat.textContent="Offline.";busy=false;return;}
+      try{
+        var r=await sample(RULES+"\n\nCompany: "+($("coName").value.trim()||"unnamed")+" ($"+($("coSym").value.trim()||"SYMBOL")+"), tied to the stock "+STOCKS[sel.selectedIndex][1]+" ("+sel.value+"), mascot: "+MASCOTS[m][0]+".\n\nTask: "+q,{cache:false,onText:function(p){out.textContent=p.text;}});
+        out.textContent=r.text;stat.textContent="Done.";
+      }catch(e){out.textContent=(e&&e.text)||"";stat.textContent=e&&e.code==="rate_limited"?"Too many requests. Try again in a minute.":"The advisor could not answer right now.";}
+      busy=false;
+    }
+    $("aiPlan").addEventListener("click",function(){ask("Write a 7 day launch plan for this CEO. One line per day, each with one concrete action about community, content, or transparency. Then list 3 things a good CEO never does.");});
+    $("aiForm").addEventListener("submit",function(e){e.preventDefault();var q=$("aiQ").value.trim().slice(0,200);if(q)ask("Answer this CEO question in under 120 words: "+q);});
+  })();
+
+  /* lobby: everyone with the page open shares this room through presence */
+  if(!matchMedia("(min-width:1180px)").matches)$("w-lobby").hidden=true;
+  (function(){
+    var cv=$("lobby"),cx=cv.getContext("2d"),N=20,TW=28,TH=14,OX=260,OY=76;
+    var COL=["#E91E63","#FFD23F","#3FB950","#7B61FF","#FF8A00","#FFFFFF"],DESK=[[2,2],[9,2],[16,2],[2,9],[2,16],[10,10],[16,9],[9,16],[16,16]];
+    var me={x:6+Math.floor(Math.random()*8),y:6+Math.floor(Math.random()*8),name:"bro-"+Math.floor(1000+Math.random()*9000),c:Math.floor(Math.random()*6),say:"",sayAt:0,n:0,me:true};
+    me.tx=me.x;me.ty=me.y;
+    var others={},room=null;
+    function clamp(v){return Math.max(0,Math.min(N-1,Math.round(v)));}
+    function iso(x,y){return[OX+(x-y)*TW,OY+(x+y)*TH];}
+    function poly(pts,f){cx.beginPath();pts.forEach(function(p,i){if(i)cx.lineTo(p[0],p[1]);else cx.moveTo(p[0],p[1]);});cx.closePath();cx.fillStyle=f;cx.fill();cx.strokeStyle="rgba(0,0,0,.25)";cx.stroke();}
+    function diamond(x,y,lift){var p=iso(x,y);return[[p[0],p[1]-lift],[p[0]+TW,p[1]+TH-lift],[p[0],p[1]+2*TH-lift],[p[0]-TW,p[1]+TH-lift]];}
+    function person(o){
+      var p=iso(o.x,o.y),X=Math.round(p[0]),B=Math.round(p[1]+TH+3);
+      cx.fillStyle="rgba(0,0,0,.25)";cx.beginPath();cx.ellipse(X,B,9,4,0,0,6.3);cx.fill();
+      cx.fillStyle="#1B2530";cx.fillRect(X-7,B-21,14,17);cx.fillRect(X-6,B-32,12,12);cx.fillRect(X-5,B-5,4,5);cx.fillRect(X+1,B-5,4,5);
+      cx.fillStyle=COL[o.c%6];cx.fillRect(X-6,B-20,12,15);
+      cx.fillStyle="#F2C79B";cx.fillRect(X-5,B-31,10,10);
+      cx.fillStyle="#1B2530";cx.fillRect(X-3,B-27,2,2);cx.fillRect(X+1,B-27,2,2);
+      cx.font="14px VT323,monospace";cx.textAlign="center";
+      cx.lineWidth=3;cx.strokeStyle="#10151C";cx.strokeText(o.name+(o.me?" (you)":""),X,B+15);cx.lineWidth=1;cx.fillStyle=o.me?"#FFD23F":"#fff";cx.fillText(o.name+(o.me?" (you)":""),X,B+15);
+      if(o.say&&Date.now()-o.sayAt<7000){var w=Math.min(200,cx.measureText(o.say).width+12),bx=Math.max(4,Math.min(516-w,X-w/2));
+        cx.fillStyle="#fff";cx.fillRect(bx,B-56,w,18);cx.strokeStyle="#1B2530";cx.strokeRect(bx+.5,B-55.5,w-1,17);
+        cx.fillStyle="#10151C";cx.save();cx.beginPath();cx.rect(bx+2,B-56,w-4,18);cx.clip();cx.fillText(o.say,bx+w/2,B-43);cx.restore();}
+    }
+    function step(o){var dx=o.tx-o.x,dy=o.ty-o.y,s=.07;o.x+=Math.abs(dx)<s?dx:s*Math.sign(dx);o.y+=Math.abs(dy)<s?dy:s*Math.sign(dy);}
+    function frame(){
+      requestAnimationFrame(frame);if(cv.offsetParent===null)return;
+      OX=260-(me.x-me.y)*TW;OY=165-(me.x+me.y)*TH-TH;
+      cx.fillStyle="#0A2A45";cx.fillRect(0,0,520,320);
+      poly([[OX,OY],[OX-N*TW,OY+N*TH],[OX-N*TW,OY+N*TH-54],[OX,OY-54]],"#2AA6E8");
+      poly([[OX,OY],[OX+N*TW,OY+N*TH],[OX+N*TW,OY+N*TH-54],[OX,OY-54]],"#0083CB");
+      cx.fillStyle="#fff";cx.font="18px VT323,monospace";cx.textAlign="center";cx.save();cx.translate(OX+N*TW/2,OY+N*TH/2-30);cx.transform(1,.5,0,1,0,0);cx.fillText("PPPERCOLATOR "+(document.documentElement.dataset.era||""),0,0);cx.restore();
+      for(var y=0;y<N;y++)for(var x=0;x<N;x++)poly(diamond(x,y,0),(x+y)%2?"#D3D7DE":"#BFC6D1");
+      var all=[me].concat(Object.keys(others).map(function(k){return others[k];}));all.forEach(step);
+      var things=all.map(function(o){return{d:o.x+o.y,o:o};}).concat(DESK.map(function(d){return{d:d[0]+d[1]+.01,k:d};}));
+      things.sort(function(a,b){return a.d-b.d;}).forEach(function(t){
+        if(t.o){person(t.o);return;}
+        var a=diamond(t.k[0],t.k[1],0),b=diamond(t.k[0],t.k[1],14);
+        poly([a[3],a[2],b[2],b[3]],"#6B4A2E");poly([a[2],a[1],b[1],b[2]],"#8B5E3C");poly(b,"#B98A5A");
+        cx.fillStyle="#1B2530";cx.fillRect(b[0][0]-7,b[0][1]-2,14,11);cx.fillStyle="#3FB950";cx.fillRect(b[0][0]-5,b[0][1],10,7);
+      });
+    }
+    function push(){if(room)room.presence({x:me.tx,y:me.ty,name:me.name,c:me.c,say:me.say,n:me.n}).catch(function(){});}
+    function sync(peers){
+      var seen={};
+      peers.forEach(function(p){
+        if(p.isMe)return;var q=p.presence||{};if(typeof q.x!=="number"||typeof q.y!=="number")return;
+        var o=others[p.peer]||(others[p.peer]={x:clamp(q.x),y:clamp(q.y),n:q.n,say:"",sayAt:0});
+        o.tx=clamp(q.x);o.ty=clamp(q.y);o.name=String(q.name||"bro").slice(0,16);o.c=Math.abs(q.c|0)%6;
+        if(q.n!==o.n){o.n=q.n;o.say=String(q.say||"").slice(0,60);o.sayAt=o.say?Date.now():0;}
+        seen[p.peer]=1;
+      });
+      Object.keys(others).forEach(function(k){if(!seen[k])delete others[k];});
+      $("lobbyStat").textContent=(Object.keys(others).length+1)+" in the lobby right now";
+    }
+    cv.addEventListener("click",function(e){
+      var r=cv.getBoundingClientRect(),mx=(e.clientX-r.left)*520/r.width,my=(e.clientY-r.top)*320/r.height,hit=null;
+      [me].concat(Object.keys(others).map(function(k){return others[k];})).forEach(function(o){var p=iso(o.x,o.y),B=p[1]+TH+3;if(Math.abs(mx-p[0])<10&&my>B-34&&my<B+4)hit=o;});
+      if(hit){$("lobbyCard").textContent=hit.name+(hit.me?" (you)":"")+" | CEO of: no companies yet";return;}
+      var a=(mx-OX)/TW,b=(my-OY)/TH;me.tx=clamp(Math.floor((a+b)/2));me.ty=clamp(Math.floor((b-a)/2));push();
+    });
+    $("chatForm").addEventListener("submit",function(e){e.preventDefault();var v=$("chatIn").value.trim().slice(0,60);if(!v)return;me.say=v;me.sayAt=Date.now();me.n++;$("chatIn").value="";push();});
+    frame();
+    (async function(){
+      try{room=window.claude&&window.claude.use?await window.claude.use("room"):null;}catch(e){room=null;}
+      if(!room){$("lobbyStat").textContent="Solo mode. Other players show up when the lobby is online.";return;}
+      push();room.onPeers(function(ch){sync(ch.peers);});sync(room.peers());
+    })();
+  })();
+})();
+</script>
+</body></html>

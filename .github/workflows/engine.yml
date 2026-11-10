@@ -1,0 +1,34 @@
+name: engine
+on:
+  push:
+    branches: [main]
+    paths: ["engine/**", "sim/**", ".github/workflows/engine.yml"]
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install stable --profile minimal && rustup default stable && rustup target add wasm32-unknown-unknown
+      - name: Wrapper tests against the engine
+        run: cd sim && cargo test
+      - name: Build wasm
+        run: cd sim && cargo build --release --target wasm32-unknown-unknown --lib
+      - name: Commit wasm
+        run: |
+          mkdir -p dist
+          cp sim/target/wasm32-unknown-unknown/release/sim.wasm dist/sim.wasm
+          sha256sum dist/sim.wasm | tee dist/sim.wasm.sha256
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f dist
+          git diff --cached --quiet || git commit -m "Build sim.wasm [skip ci]"
+          git push
+  engine-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install stable --profile minimal && rustup default stable
+      - name: Engine test suite, unmodified
+        run: cd engine && cargo test

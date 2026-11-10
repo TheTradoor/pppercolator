@@ -1,0 +1,7 @@
+Pppercolator
+Copyright 2026 bubblesonchain
+
+The directory `engine/` is an unmodified copy of Percolator by Anatoly Yakovenko
+(https://github.com/aeyakovenko/percolator), commit
+37cb14ee1436eaf3b7d97e1901b0dc1bf38f5311, licensed under the Apache License 2.0.
+This project is not affiliated with or endorsed by its author.

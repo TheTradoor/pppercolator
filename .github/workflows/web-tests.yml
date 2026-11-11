@@ -1,0 +1,19 @@
+name: web-tests
+on:
+  pull_request:
+    paths: ["web/**", "site/index.html", ".github/workflows/web-tests.yml"]
+  push:
+    branches: [main]
+    paths: ["web/**", "site/index.html", ".github/workflows/web-tests.yml"]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Price feed and order regression tests
+        run: node --test web/tests/*.test.cjs

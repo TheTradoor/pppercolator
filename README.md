@@ -50,4 +50,10 @@ It is a memecoin, gives no claim on this project, and is not connected to the Pe
 cd sim && cargo test
 ```
 
+Browser price-feed and order-guard tests (Node.js 22+, no wallet or network required):
+
+```bash
+node --test web/tests/*.test.cjs
+```
+
 Not affiliated with or endorsed by the Percolator author.

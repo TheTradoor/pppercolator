@@ -15,7 +15,7 @@ cmp /tmp/tradoor-contract.json protocol/upstream-contract.json
 npm test --prefix protocol
 ```
 
-Exact revisions and deployment status are recorded in [product/source-lock.json](product/source-lock.json). The compiled host contract is not an SBF deployment artifact or a proof of mainnet safety.
+Exact revisions and deployment status are recorded in [product/source-lock.json](product/source-lock.json). The [local SBF lifecycle fixture](protocol/svm/README.md) also executes instructions from this JavaScript adapter against the pinned program bytecode: portfolio initialization, deposit, bilateral open/close, withdrawal, and two rejection/rollback cases. Its fixed-price, zero-fee SBPF v0 scope is documented; this is not a public deployment or a proof of mainnet safety.
 
 ## Inherited code
 

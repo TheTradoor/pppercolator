@@ -122,7 +122,7 @@ fn javascript_adapter_executes_native_spl_lifecycle_and_rejects_invalid_actions(
     let maker_portfolio = env.actors[1].portfolio;
     let size = (percolator::POS_SCALE as i128) / 10;
     let mut trade_cu = Vec::new();
-    for signed_size in [size, -size] {
+    for (step, signed_size) in [size, -size].into_iter().enumerate() {
         let a = read(&env, portfolio, owner.pubkey());
         let b = read(&env, maker_portfolio, maker.pubkey());
         let market_id = env.primary_market_state().1.assets[0].market_id;
@@ -135,6 +135,15 @@ fn javascript_adapter_executes_native_spl_lifecycle_and_rejects_invalid_actions(
                 "market":env.market.to_string(),"takerPortfolio":portfolio.to_string(),
                 "makerPortfolio":maker_portfolio.to_string()}));
         trade_cu.push(send(&mut env, trade, &[&owner, &maker]).expect("open/close through JS adapter"));
+        // Independently inspect the executed program state: a successful no-op
+        // must not pass as an opened position or a completed close.
+        let taker_state = percolator_prog::state::read_portfolio(
+            &env.svm.get_account(&portfolio).unwrap().data,
+        ).unwrap();
+        let maker_state = env.primary_portfolio(1);
+        let expected_position = if step == 0 { size } else { 0 };
+        assert_eq!(taker_state.legs[0].basis_pos_q.get(), expected_position);
+        assert_eq!(maker_state.legs[0].basis_pos_q.get(), -expected_position);
     }
 
     let p = read(&env, portfolio, owner.pubkey());

@@ -1,0 +1,29 @@
+name: native-protocol
+on:
+  pull_request:
+    paths: ["protocol/**", "product/**", ".github/workflows/native-protocol.yml"]
+  push:
+    branches: [main, feat/native-percolator-product]
+    paths: ["protocol/**", "product/**", ".github/workflows/native-protocol.yml"]
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    env:
+      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install the verified host toolchain
+        run: rustup toolchain install 1.100.0 --profile minimal && rustup default 1.100.0
+      - name: Install locked client dependencies
+        run: npm ci --prefix protocol --ignore-scripts --no-audit --no-fund
+      - name: Verify fixtures against the pinned upstream Rust implementation
+        run: |
+          cargo run --locked --manifest-path protocol/conformance/Cargo.toml --bin export-contract > /tmp/tradoor-contract.json
+          cmp /tmp/tradoor-contract.json protocol/upstream-contract.json
+      - name: Native protocol regression tests
+        run: npm test --prefix protocol

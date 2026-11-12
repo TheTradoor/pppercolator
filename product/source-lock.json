@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "workingName": "Tradoor Perps",
+  "stage": "native-integration",
+  "publicDepositsEnabled": false,
+  "initialMarket": { "base": "SOL", "quote": "USD", "collateral": "USDC", "network": "solana", "riskParameters": "pending-liquidity-and-stress-review" },
+  "origins": {
+    "terminal": { "repository": "https://github.com/bubblesonchain/pppercolator", "commit": "98ce0e73f3db56dbfa0fc7d98a5e3e0f5e865a6e" },
+    "terminalFixes": { "repository": "https://github.com/TheTradoor/pppercolator", "commit": "23afdc9cb6d920efd9b36e893f49e0cc8db7a2df" },
+    "simulatorFixes": { "repository": "https://github.com/TheTradoor/pppercolator", "commit": "041fba107fa3ddff10e44fde86ded38d17fff41c" },
+    "nativeEngine": { "repository": "https://github.com/aeyakovenko/percolator", "commit": "b22bef7d6122fd7d82680ce9859e8b77fd8ef656" },
+    "nativeProgram": { "repository": "https://github.com/aeyakovenko/percolator-prog", "commit": "b42fe017c2bc953778f90d0cb85cd1d426b6e783" },
+    "matcherCandidate": { "repository": "https://github.com/aeyakovenko/percolator-match", "commit": "60aac3a996d0264c47fbefe9a2625d6ee6fb6a47", "status": "reference-only-not-integrated" },
+    "legacyPaperEngine": { "repository": "https://github.com/aeyakovenko/percolator", "commit": "37cb14ee1436eaf3b7d97e1901b0dc1bf38f5311" }
+  },
+  "deployment": { "programId": null, "marketAddress": null, "genesisHash": null, "programBinarySha256": null, "matcherProgramId": null, "oracleAccount": null, "vault": null },
+  "release": { "externalReview": null, "liquidityProvider": null, "keeperOperator": null, "authorityPolicy": null }
+}

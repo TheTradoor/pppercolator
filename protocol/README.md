@@ -1,6 +1,6 @@
 # Native protocol integration
 
-This package builds instructions and reads portfolio identities for the exact upstream revisions in `product/source-lock.json`. It has no signer, private-key store, broadcasting function or deployed market configuration.
+The client modules build instructions and read portfolio identities for the exact upstream revisions in `product/source-lock.json`. They have no signer, private-key store, broadcasting function or deployed market configuration. The separate [SBF lifecycle fixture](svm/README.md) signs with local test keys inside LiteSVM only.
 
 ## Check the contract
 

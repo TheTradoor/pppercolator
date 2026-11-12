@@ -1,0 +1,41 @@
+name: native-svm
+on:
+  pull_request:
+    paths: ["protocol/**", "product/source-lock.json", ".github/workflows/native-svm.yml"]
+  push:
+    branches: [main, feat/native-percolator-product]
+    paths: ["protocol/**", "product/source-lock.json", ".github/workflows/native-svm.yml"]
+permissions:
+  contents: read
+concurrency:
+  group: native-svm-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  lifecycle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install pinned compilers and SBF builder
+        run: |
+          rustup toolchain install 1.100.0 --profile minimal
+          rustup toolchain install 1.95.0 --profile minimal
+          rustup default 1.100.0
+          cargo install cargo-build-sbf --version 4.6.0 --locked
+      - name: Install locked client dependencies
+        run: npm ci --prefix protocol --ignore-scripts --no-audit --no-fund
+      - name: Fetch the exact wrapper source
+        run: |
+          git init "$RUNNER_TEMP/percolator-prog"
+          git -C "$RUNNER_TEMP/percolator-prog" remote add origin https://github.com/aeyakovenko/percolator-prog.git
+          git -C "$RUNNER_TEMP/percolator-prog" fetch --depth 1 origin b42fe017c2bc953778f90d0cb85cd1d426b6e783
+          git -C "$RUNNER_TEMP/percolator-prog" checkout --detach FETCH_HEAD
+      - name: Build SBF and run the JavaScript-to-SVM lifecycle
+        run: bash protocol/svm/run.sh "$RUNNER_TEMP/percolator-prog"

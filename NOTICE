@@ -5,3 +5,9 @@ The directory `engine/` is an unmodified copy of Percolator by Anatoly Yakovenko
 (https://github.com/aeyakovenko/percolator), commit
 37cb14ee1436eaf3b7d97e1901b0dc1bf38f5311, licensed under the Apache License 2.0.
 This project is not affiliated with or endorsed by its author.
+
+Tradoor Perps continuation
+This branch modifies the inherited terminal/client and simulator and adds a
+source-pinned native Solana protocol integration. The original engine/ source
+remains unmodified. Native dependencies use the unmodified upstream engine
+and program revisions recorded in product/source-lock.json.

@@ -1,60 +1,28 @@
-# Pppercolator
+# Tradoor Perps
 
-A perps terminal with two modes. Real mode routes orders to Hyperliquid from the user's own
-wallet. Paper mode runs a perps market in the browser on the unmodified
-[Percolator](https://github.com/aeyakovenko/percolator) risk engine by Anatoly Yakovenko, compiled
-to WebAssembly and marked to live prices. Independent project, not affiliated with him.
+A native Solana perpetuals product in development, continuing the Pppercolator fork with Anatoly Yakovenko's Percolator risk engine. **Working name; no native market is deployed and this branch is not a production release.**
 
-**Beta. Not audited.** Real mode sends orders to Hyperliquid from the user's own wallet; this
-project never holds funds. The paper mode uses the Percolator engine, whose own README says:
-"Educational research project. Not production ready. Not audited. Do not use with real funds."
-No real funds touch that engine here.
+The intended first market is SOL with USDC collateral. Risk parameters, liquidity, oracle/keeper operations, independent review and deployment remain release work. The [product specification and delivery milestones](product/README.md) distinguish implemented code from those outstanding requirements.
 
-Live at https://pppercolator.fun. Launchpad at https://launchpad.pppercolator.fun. Docs at https://docs.pppercolator.fun.
+## Native integration
 
-## Layout
+[protocol/](protocol/README.md) contains source-pinned instruction builders, an account-identity reader, a read-only RPC inspector and Rust-to-JavaScript conformance tests. It compiles the unmodified upstream Solana wrapper and engine to generate the actual wire contract; it does not replace their risk calculations.
 
-- `engine/` is Percolator at commit `37cb14ee1436eaf3b7d97e1901b0dc1bf38f5311`, byte for byte.
-  CI runs its own test suite on every change. Apache-2.0, see `NOTICE`.
-- `sim/` is a thin wrapper. It holds the accounts, feeds prices and moves paper tokens.
-  Every risk decision (margin, liquidation, fees, loss handling) is made by the engine.
-- `launchpad/` is the launchpad site: a retro desktop game with a Pump.fun launch flow (beta).
-- `docs/` is the docs site.
-- `site/` is the deployed terminal build with its icons and share card.
-- `web/index.src.html` is the terminal page. `__WASM__` is replaced with the base64 of the build.
-- `hl/` is the Hyperliquid client (wallet connect, trading-only agent key, market orders), bundled by CI
-  into `dist/hl.js` from pinned dependencies. `__HLJS__` in the page is replaced with that bundle.
-- `dist/sim.wasm` is built by CI from the two directories above.
-
-## Status
-
-Working: deposits, trades, the 10x margin check, margin calls, fees to insurance, and three
-solvency checks that hold across a 600-slot soak test with the market staying active.
-
-Market setup (wrapper policy, not engine rules): each trader faces a dedicated house account.
-When the engine certifies a trader below maintenance margin, the house closes the position
-at the oracle price as an ordinary trade. If the engine refuses that, its own liquidation
-runs in the keeper crank. An earlier setup with one shared house account locked markets
-after every engine liquidation, because the engine blocks new risk on a side it has scaled
-down until that side drains.
-
-Prices, candles and funding rates: live from Hyperliquid's public info API (main perps for
-crypto, the XYZ market for stock perps), with a random simulation as fallback. Not done: funding rates are zero and nothing is on chain.
-
-$PPP on Pump.fun (`Ho7iohoM6UN96yoxzBNzz9aXZpNW3AyUVuEmBdAQpump`) was launched by the Pppercolator team.
-It is a memecoin, gives no claim on this project, and is not connected to the Percolator author.
-
-## Run the tests
-
-```bash
-cd sim && cargo test
+```sh
+npm ci --prefix protocol --ignore-scripts --no-audit --no-fund
+cargo run --locked --manifest-path protocol/conformance/Cargo.toml --bin export-contract > /tmp/tradoor-contract.json
+cmp /tmp/tradoor-contract.json protocol/upstream-contract.json
+npm test --prefix protocol
 ```
 
-Terminal, wallet-session and launch-flow tests (Node.js 22+, wallet and exchange calls are mocked):
+Exact revisions and deployment status are recorded in [product/source-lock.json](product/source-lock.json). The compiled host contract is not an SBF deployment artifact or a proof of mainnet safety.
 
-```bash
-npm ci --prefix hl --ignore-scripts --no-audit --no-fund
-node --test web/tests/*.test.cjs hl/tests/*.test.mjs launchpad/tests/*.test.cjs
-```
+## Inherited code
 
-Not affiliated with or endorsed by the Percolator author.
+The original terminal, Hyperliquid adapter, paper simulator and launchpad are retained with the wallet/quote/submission and native-thread fixes. Their original description is preserved in [product/UPSTREAM.md](product/UPSTREAM.md). The inherited Hyperliquid real mode and browser paper balances are not the native product's execution path.
+
+The inherited simulator engine remains at its original revision. The new native wrapper uses its own explicitly pinned compatible engine revision. No upstream engine source was edited.
+
+## Attribution
+
+Independent continuation of [bubblesonchain/pppercolator](https://github.com/bubblesonchain/pppercolator), using [aeyakovenko/percolator](https://github.com/aeyakovenko/percolator) and [aeyakovenko/percolator-prog](https://github.com/aeyakovenko/percolator-prog). Not affiliated with or endorsed by those authors. Preserve [LICENSE](LICENSE) and [NOTICE](NOTICE). Upstream describes the engine and program as experimental, unaudited and not production ready.

@@ -31,6 +31,7 @@ The execution path is:
 - Strict portfolio reader with program ownership, header, length, market, address, owner and incarnation checks.
 - A read-only RPC inspector that requires an expected cluster genesis hash and reads program/market/portfolio in one contextual RPC snapshot. It explicitly does not claim to verify deployed program bytes.
 - Regression tests against the Rust-generated contract, invalid amounts, overflow, stale layouts and mismatched identities.
+- A [native SBF lifecycle fixture](../protocol/svm/README.md) that feeds this JavaScript adapter's actual account metas and instruction bytes to LiteSVM: new portfolio, deposit, bilateral open/close, full withdrawal, token conservation, excessive-withdrawal rollback and wrong-owner rejection. The fixed-price, zero-fee fixture and its SBPF v0 target are local verification, not a current-cluster deployment approval.
 
 These pieces prepare and inspect protocol data. They do not yet provide a wallet UI, signed transaction submission, an on-chain deployment, funded liquidity, a keeper, or an indexer. A source pin and passing encoder tests do not establish mainnet safety.
 
@@ -43,7 +44,7 @@ At CLI commit `7f9004768e5f6cbc4fb8c08fc1e5a8751669d990`, the upstream TypeScrip
 | Milestone | Deliverable | Exit evidence | Current status |
 | --- | --- | --- | --- |
 | Native contract integration | Exact engine/program pins, instruction encoding and account identity reads | Rust-to-JavaScript conformance; malformed/legacy inputs reject | Implemented; host-tested |
-| Local on-chain execution | Reproducible SBF program and matcher builds; real SPL vault/portfolio operations in LiteSVM or a validator | Deposit → trade → reduce/close → withdraw; balances reconcile; rollback and unauthorized actions verified | Not run |
+| Local on-chain execution | Pinned SBF program and matcher-fixture builds; SPL vault/portfolio operations in LiteSVM | Initialize → deposit → bilateral open/close → withdraw; token balances reconcile; two rejection/rollback cases | Verified locally for the documented fixed-price scope; broader economic and matcher cases pending |
 | Operational devnet product | Wallet terminal, market creation, bounded quotes, Pyth integration, keeper, indexer and transaction reconciliation | End-to-end wallet flows, restart/outage tests and public transaction traces with test assets | Not deployed |
 | Liquidity and economics | Funded LP arrangement, risk limits, funding behavior and liquidation/recovery policies | Inventory/adverse-flow stress, oracle staleness/depeg cases and loss/exit accounting reviewed | Requires capital and operator decisions |
 | Release review | Independent engine/wrapper/matcher/integration review; reproducible source-to-binary record; authority and incident policy | Findings resolved and retested; actual admin/upgrade powers documented; monitoring and exit drills | Not completed |
@@ -53,7 +54,7 @@ Devnet is a verification step on the way to the product, not the product's final
 
 ## Immediate next implementation
 
-Build the pinned wrapper with its supported default Anchor v2 entrypoint and `cargo build-sbf --tools-version v1.52`. Add a minimal SOL/USDC fixture in LiteSVM covering actual token transfers and the complete trade/withdraw lifecycle before connecting a signing wallet UI. Then implement the market/portfolio reader and keeper against the same generated layout. The inherited Hyperliquid real-mode button must not be relabeled as native Percolator trading.
+Extend the native fixture to nonzero fees/funding, adverse prices, liquidations and authorized matcher execution. Verify the current-cluster SBPF target separately from the legacy local VM target. Implement the complete market reader, bounded quote/transaction planner, oracle/keeper services and wallet terminal against the same pinned layout. The inherited Hyperliquid real-mode button must not be relabeled as native Percolator trading.
 
 ## Ownership and provenance
 
